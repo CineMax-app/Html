@@ -718,117 +718,161 @@ async function generar() {
 
                     let justHtml = `
                         <!DOCTYPE html>
-                        <html lang="es">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <title>${datos.title}</title>
-                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-                            <style>
-                                ${movieStyles}
-                            </style>
-                        </head>
-                        <body>
-                            <div id="content">
-                                <div class="post-header">
-                                    <div class="poster-container">
-                                        <img src="https://image.tmdb.org/t/p/w300${datos.poster_path}" class="poster-img" alt="${datos.title}" />
-                                    </div>
-                                    <div class="post-details">
-                                        <br>
-                                        <ul>
-                                            <li><i class=""></i></li><br>
-                                            <li><i class="fa-solid fa-calendar"></i> ${datos.release_date.slice(0,4)}</li><br>
-                                            <li><i class="fa-solid fa-clock"></i> ${convertMinutes(datos.runtime)}</li><br>
-                                            <li><i class="fas fa-star" style="color: #FFD700;"></i> ${datos.vote_average.toFixed(1)}/10</li>
-                                        </ul>
-                                    </div>
-                                </div>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${datos.title}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        ${movieStyles}
 
-                                <a href="#" id="play-button" class="hacker">
-                                    <i class="fa-solid fa-play fa-beat"></i><b>Reproducir</b>
-                                </a>
-                                <a href="#" id="transmit-button" class="hacker">
-                                    <i class="fa-brands fa-chromecast fa-beat"></i><b>Transmitir</b>
-                                </a>
+        /* Loader spinner */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
 
-                                <div class="sinopsis-container">
-                                    <div class="sinopsis-title">Sinopsis</div>
-                                    <div class="resume collapsed">
-                                        ${synopsis}
-                                    </div>
-                                    <button class="toggle-sinopsis">
-                                        <i class="fas fa-chevron-down"></i> Ver más
-                                    </button>
-                                </div>
+        .spinner {
+            border: 8px solid #2196F3;
+            border-top: 8px solid #000000;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
 
-                                <div class="cast-container">
-                                    <div class="cast-title">Reparto Principal</div>
-                                    <div class="cast-grid">
-                                        ${castHTML}
-                                    </div>
-                                </div>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-                                <!-- Modal para opciones de reproducción y transmisión -->
-                                <div id="playback-modal" class="modal">
-                                    <div class="modal-content">
-                                        <i class="fas fa-times close-icon" id="close-modal"></i>
-                                        <div class="modal-title" id="modal-title">Seleccionar opción de reproducción</div>
-                                        ${modalOptions}
-                                    </div>
-                                </div>
-                                
-                                <script>
-                                    document.addEventListener('DOMContentLoaded', function() {
-                                        const toggleBtn = document.querySelector('.toggle-sinopsis');
-                                        const sinopsis = document.querySelector('.resume');
-                                        const playButton = document.getElementById('play-button');
-                                        const transmitButton = document.getElementById('transmit-button');
-                                        const modal = document.getElementById('playback-modal');
-                                        const closeModal = document.getElementById('close-modal');
+        #content {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
 
-                                        toggleBtn.addEventListener('click', function() {
-                                            if (sinopsis.classList.contains('collapsed')) {
-                                                sinopsis.classList.remove('collapsed');
-                                                sinopsis.classList.add('expanded');
-                                                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Ver menos';
-                                            } else {
-                                                sinopsis.classList.remove('expanded');
-                                                sinopsis.classList.add('collapsed');
-                                                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver más';
-                                            }
-                                        });
+    <div id="content">
+        <div class="post-header">
+            <div class="poster-container">
+                <img src="https://image.tmdb.org/t/p/w300${datos.poster_path}" class="poster-img" alt="${datos.title}" />
+            </div>
+            <div class="post-details">
+                <br>
+                <ul>
+                    <li><i class=""></i></li><br>
+                    <li><i class="fa-solid fa-calendar"></i> ${datos.release_date.slice(0,4)}</li><br>
+                    <li><i class="fa-solid fa-clock"></i> ${convertMinutes(datos.runtime)}</li><br>
+                    <li><i class="fas fa-star" style="color: #FFD700;"></i> ${datos.vote_average.toFixed(1)}/10</li>
+                </ul>
+            </div>
+        </div>
 
-                                        const modalOptions = document.querySelectorAll('.modal-option');
-                                        const modalTitle = document.getElementById('modal-title');
+        <a href="#" id="play-button" class="hacker">
+            <i class="fa-solid fa-play fa-beat"></i><b>Reproducir</b>
+        </a>
+        <a href="#" id="transmit-button" class="hacker">
+            <i class="fa-brands fa-chromecast fa-beat"></i><b>Transmitir</b>
+        </a>
 
-                                        playButton.addEventListener('click', function(e) {
-                                            e.preventDefault();
-                                            modalTitle.textContent = 'Seleccionar opción de reproducción';
-                                            modalOptions.forEach(option => {
-                                                option.href = option.href.replace('wvc-x-callback://open?url=', '');
-                                            });
-                                            modal.style.display = 'flex';
-                                        });
+        <div class="sinopsis-container">
+            <div class="sinopsis-title">Sinopsis</div>
+            <div class="resume collapsed">
+                ${synopsis}
+            </div>
+            <button class="toggle-sinopsis">
+                <i class="fas fa-chevron-down"></i> Ver más
+            </button>
+        </div>
 
-                                        transmitButton.addEventListener('click', function(e) {
-                                            e.preventDefault();
-                                            modalTitle.textContent = 'Seleccionar opción de transmisión';
-                                            modalOptions.forEach(option => {
-                                                if (!option.href.includes('wvc-x-callback')) {
-                                                    option.href = 'wvc-x-callback://open?url=' + option.href;
-                                                }
-                                            });
-                                            modal.style.display = 'flex';
-                                        });
+        <div class="cast-container">
+            <div class="cast-title">Reparto Principal</div>
+            <div class="cast-grid">
+                ${castHTML}
+            </div>
+        </div>
 
-                                        closeModal.addEventListener('click', () => modal.style.display = 'none');
-                                        window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-                                    });
-                                </script>
-                            </div>
-                        </body>
-                        </html>`;
+        <!-- Modal para opciones de reproducción y transmisión -->
+        <div id="playback-modal" class="modal">
+            <div class="modal-content">
+                <i class="fas fa-times close-icon" id="close-modal"></i>
+                <div class="modal-title" id="modal-title">Seleccionar opción de reproducción</div>
+                ${modalOptions}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loader = document.getElementById('loader');
+            const content = document.getElementById('content');
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+                content.style.display = 'block';
+            }, 1000);
+
+            const toggleBtn = document.querySelector('.toggle-sinopsis');
+            const sinopsis = document.querySelector('.resume');
+            const playButton = document.getElementById('play-button');
+            const transmitButton = document.getElementById('transmit-button');
+            const modal = document.getElementById('playback-modal');
+            const closeModal = document.getElementById('close-modal');
+
+            toggleBtn.addEventListener('click', function() {
+                if (sinopsis.classList.contains('collapsed')) {
+                    sinopsis.classList.remove('collapsed');
+                    sinopsis.classList.add('expanded');
+                    toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Ver menos';
+                } else {
+                    sinopsis.classList.remove('expanded');
+                    sinopsis.classList.add('collapsed');
+                    toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Ver más';
+                }
+            });
+
+            const modalOptions = document.querySelectorAll('.modal-option');
+            const modalTitle = document.getElementById('modal-title');
+
+            playButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalTitle.textContent = 'Seleccionar opción de reproducción';
+                modalOptions.forEach(option => {
+                    option.href = option.href.replace('wvc-x-callback://open?url=', '');
+                });
+                modal.style.display = 'flex';
+            });
+
+            transmitButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalTitle.textContent = 'Seleccionar opción de transmisión';
+                modalOptions.forEach(option => {
+                    if (!option.href.includes('wvc-x-callback')) {
+                        option.href = 'wvc-x-callback://open?url=' + option.href;
+                    }
+                });
+                modal.style.display = 'flex';
+            });
+
+            closeModal.addEventListener('click', () => modal.style.display = 'none');
+            window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+        });
+    </script>
+</body>
+</html>`;
 
                     document.getElementById('html-final').innerText = justHtml;
 
