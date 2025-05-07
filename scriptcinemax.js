@@ -486,13 +486,13 @@ async function generar() {
                     // Generate modal content based on available links
                     const modalOptions = [
                         userInputA ? `<a href="${userInputA}" class="modal-option" id="option1">
-                            <i class="fas fa-play"></i> SuperVideo
+                            <i class="fas fa-play"></i> Supervideo
                         </a>` : '',
                         userInputB ? `<a href="${userInputB}" class="modal-option" id="option2">
                             <i class="fas fa-play"></i> Dropload
                         </a>` : '',
                         userInputC ? `<a href="${userInputC}" class="modal-option" id="option3">
-                            <i class="fas fa-play"></i> WolfStream
+                            <i class="fas fa-play"></i> Filegram
                         </a>` : ''
                     ].filter(Boolean).join('');
 
