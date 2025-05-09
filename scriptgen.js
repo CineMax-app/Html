@@ -726,7 +726,7 @@ async function generar() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pokémon Detective Pikachu</title>
+<title>${datos.title}</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
 
@@ -1021,7 +1021,7 @@ async function generar() {
     </div>
     <div class="post-details"><br>
       <!-- Título reemplazado por un div personalizado -->
-      <div class="titulo-movie text-right large-font move-left">${datos.title} (${datos.release_date.slice(0, 4)})</div>
+      <div class="titulo-movie text-right large-font move-left">${datos.title}</div>
       
       <ul><li><i class=""></i></li><br>
 <li><i class="fa-solid fa-calendar"></i> ${datos.release_date.slice(0,4)}</li><br>
