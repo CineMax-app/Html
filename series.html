@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    
+    <title>Detalles de Serie - PLAYHUB+</title>
+    <!-- Se elimina la fuente Inter para usar Netflix Sans -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        /* --- Definición de la fuente Netflix Sans --- */
+        @font-face {
+            font-family: 'Netflix Sans';
+            src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Rg.woff2') format('woff2');
+            font-weight: 400; /* Regular */
+        }
+        @font-face {
+            font-family: 'Netflix Sans';
+            src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Md.woff2') format('woff2');
+            font-weight: 700; /* Bold */
+        }
+
+        :root {
+            /* --- Fondo cambiado a negro puro --- */
+            --background-color: #000;
+            --card-placeholder-color: #1f1f1f;
+            --text-color: #fff;
+            --text-secondary-color: #aaa;
+            --accent-color: #e50914;
+        }
+        
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        
+        /* --- Fuente base cambiada a Netflix Sans --- */
+        body {
+            font-family: 'Netflix Sans', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        body.modal-open{overflow:hidden}
+        a{color:inherit;text-decoration:none}
+        .header{display:flex;justify-content:flex-start;align-items:center;padding:1rem 1.25rem;position:sticky;top:0;background-color:var(--background-color);z-index:1000}
+        .header .nav-icon{font-size:28px;cursor:pointer;color:var(--text-color)}
+        .video-player-container{width:calc(100% - 2.5rem);aspect-ratio:16/9;background-color:var(--card-placeholder-color);border-radius:12px;margin:.5rem auto;position:relative;overflow:hidden}
+        #poster-state{width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+        #poster-state img{width:100%;height:100%;object-fit:cover}
+        #poster-state .play-overlay{position:absolute}
+        #poster-state .play-overlay .material-symbols-outlined{font-size:72px;font-variation-settings:'FILL' 1;color:rgba(255,255,255,.9);text-shadow:0 2px 10px rgba(0,0,0,.5)}
+        #youtube-player{width:100%;height:100%;display:none}
+        #youtube-player iframe{width:100%;height:100%;border:none}
+        .details-container{padding:1rem 1.25rem;text-align:center}
+        .details-container h1{font-size:1.8rem;font-weight:700;margin-bottom:.5rem}
+        .meta-info{display:flex;gap:1rem;color:var(--text-secondary-color);font-size:.9rem;margin-bottom:1rem;justify-content:center}
+        .play-button{display:flex;width:100%;padding:.8rem;background-color:var(--text-color);color:#000;border:none;border-radius:6px;font-size:1rem;font-weight:700;align-items:center;justify-content:center;gap:.5rem;cursor:pointer;margin-bottom:1rem}
+        .play-button .material-symbols-outlined{font-variation-settings:'FILL' 1}
+        .synopsis,.credits{font-size:.95rem;color:var(--text-secondary-color);margin-bottom:1rem;text-align:left}
+        .see-more{color:var(--text-color);font-weight:700;cursor:pointer}
+        .action-bar{display:flex;justify-content:center;padding:1rem 1.25rem;text-align:center}
+        .action-item{display:flex;flex-direction:column;align-items:center;gap:.5rem;cursor:pointer}
+        .action-item .material-symbols-outlined{font-size:28px}
+        .action-item span{font-size:.8rem;color:var(--text-secondary-color)}
+        .action-item .material-symbols-outlined.filled{font-variation-settings:'FILL' 1;color:var(--accent-color)}
+        .content-section{padding:0 1.25rem;margin-bottom:2rem}
+        .episodes-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card-placeholder-color);margin-bottom:1.5rem}
+        .episodes-title{font-size:1.1rem;font-weight:700;color:var(--text-color);position:relative;padding:.5rem .2rem}
+        .episodes-title::after{content:'';position:absolute;bottom:-9px;left:0;width:100%;height:3px;background-color:var(--accent-color)}
+        .season-selector-btn{background:0 0;border:none;color:var(--text-secondary-color);padding:0;cursor:pointer;display:flex;align-items:center;gap:.3rem;font-size:1rem;font-weight:500}
+        .episode-list{display:flex;flex-direction:column;gap:1rem}
+        .episode-item{display:flex;gap:1rem;align-items:center;cursor:pointer;border-radius:8px;transition:background-color .2s ease}
+        .episode-item:hover{background-color:var(--card-placeholder-color)}
+        .episode-thumbnail{position:relative;width:140px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background-color:var(--card-placeholder-color);flex-shrink:0}
+        .episode-thumbnail img{width:100%;height:100%;object-fit:cover}
+        .episode-thumbnail .play-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:36px;color:#fff;background-color:rgba(0,0,0,.5);border-radius:50%}
+        .episode-details{flex-grow:1}
+        .episode-details h3{font-size:1rem;font-weight:500;margin-bottom:.25rem}
+        .episode-details .date{font-size:.8rem;color:var(--text-secondary-color)}
+        .episode-download-link{margin-left:auto;padding:0 .5rem}
+        .episode-download-link .material-symbols-outlined{font-size:28px;color:var(--text-secondary-color)}
+        .season-modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.9);z-index:2000;display:flex;justify-content:center;align-items:center;opacity:0;visibility:hidden;transition:opacity .2s ease}
+        .season-modal.is-active{opacity:1;visibility:visible}
+        .season-modal-content{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+        .season-list{list-style:none;max-height:80vh;overflow-y:auto;margin-bottom:2rem}
+        .season-list-item{font-size:1.5rem;padding:.8rem 0;cursor:pointer;color:var(--text-secondary-color);transition:color .2s ease}
+        .season-list-item.active,.season-list-item:hover{color:var(--text-color);font-weight:700}
+        .season-modal-close-btn{background:var(--card-placeholder-color);border:none;width:50px;height:50px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer}
+        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.7);backdrop-filter:blur(5px);z-index:3000;display:flex;justify-content:center;align-items:center;opacity:0;visibility:hidden;transition:opacity .3s ease, transform .3s ease; transform: scale(1.05);}
+        .modal.is-active{opacity:1;visibility:visible; transform: scale(1);}
+        #loading-modal .modal-content {background-color:rgba(0,0,0,0.8);border-radius:24px;padding:2rem;width:auto;display:flex;flex-direction:row;align-items:center;gap:1rem;}
+        #loading-modal .loading-spinner {width:28px;height:28px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+        #loading-modal h2 {font-size:1.1rem;font-weight:500;margin:0;}
+        @keyframes spin {to {transform:rotate(360deg);}}
+        #videoIframe {display:none!important;}
+    </style>
+</head>
+<body>
+    <header class="header"><a href="index.html" class="nav-icon material-symbols-outlined">arrow_back</a></header>
+    <main class="main-content">
+        <div class="video-player-container"><div id="poster-state"><img src="" alt="Banner de la serie"><div class="play-overlay"><span class="material-symbols-outlined">play_circle</span></div></div><div id="youtube-player"></div></div><div class="details-container"><h1></h1><div class="meta-info"><span id="meta-year"></span><span id="meta-category"></span><span id="meta-rating"></span></div><button id="main-play-button" class="play-button"><span class="material-symbols-outlined">play_arrow</span> Reproducir</button><p class="synopsis" id="synopsis-p"></p><p class="credits" id="credits-p"></p></div><div class="action-bar"><div id="my-list-btn" class="action-item"><span class="material-symbols-outlined">add</span><span>Mi lista</span></div></div><div class="content-section"><div class="episodes-header"><div class="episodes-title">Episodios</div><button id="season-selector-btn" class="season-selector-btn"><span id="current-season-text"></span><span class="material-symbols-outlined">arrow_drop_down</span></button></div><div class="episode-list" id="episode-list-container"></div></div>
+    </main>
+
+    <!-- Modales -->
+    <div id="season-modal" class="season-modal"><div class="season-modal-content"><ul id="season-list" class="season-list"></ul><button id="season-modal-close-btn" class="season-modal-close-btn"><span class="material-symbols-outlined">close</span></button></div></div>
+    <div class="modal" id="loading-modal"><div class="modal-content"><div class="loading-spinner"></div><h2>Cargando...</h2></div></div>
+    <iframe id="videoIframe" frameborder="0" allow="autoplay" title="Player"></iframe>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+        // --- CONFIGURACIÓN DE FIREBASE ACTUALIZADA ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6Fkp5pldhVNFcJbxWY8E6QyDKhITt264",
+            authDomain: "cine-plus-hd.firebaseapp.com",
+            databaseURL: "https://cine-plus-hd.firebaseio.com",
+            projectId: "cine-plus-hd",
+            storageBucket: "cine-plus-hd.firebasestorage.app",
+            messagingSenderId: "838484037238",
+            appId: "1:838484037238:web:1ee6412b7cae0835a4d957"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // --- Lógica del Reproductor (Integrada) ---
+        const loadingModal = document.getElementById('loading-modal');
+        const videoIframe = document.getElementById('videoIframe');
+        let playbackTimeout;
+
+        function startPlayback(videoUrl) {
+            loadingModal.classList.add('is-active');
+            
+            function esUrlValida(url) { try { new URL(url); return true; } catch { return false; } }
+            
+            function finishPlayback() {
+                clearTimeout(playbackTimeout);
+                loadingModal.classList.remove('is-active');
+            }
+
+            if (videoUrl && esUrlValida(videoUrl)) {
+                videoIframe.src = videoUrl;
+                setTimeout(() => {
+                    const x = window.innerWidth / 2;
+                    const y = window.innerHeight / 2;
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => {
+                            const element = document.elementFromPoint(x, y);
+                            if (element) { element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); }
+                        }, i * 300);
+                    }
+                }, 5000);
+                
+                playbackTimeout = setTimeout(finishPlayback, 10000);
+            } else {
+                const loadingText = loadingModal.querySelector('h2');
+                loadingText.textContent = "Enlace no válido";
+                playbackTimeout = setTimeout(() => {
+                    finishPlayback();
+                    loadingText.textContent = "Cargando...";
+                }, 1500);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const seriesId = urlParams.get('id');
+            if (!seriesId) { document.body.innerHTML = '<h1>Error: ID de serie no especificado.</h1>'; return; }
+            
+            onValue(ref(database, 'content'), (snapshot) => {
+                const allContent = snapshot.val();
+                if (!allContent) { document.body.innerHTML = '<h1>Error al cargar la base de datos.</h1>'; return; }
+                const seriesData = allContent.find(item => item.id === seriesId && item.type === 'series');
+                if (!seriesData) { document.body.innerHTML = `<h1>Error: Serie no encontrada.</h1>`; return; }
+                populatePage(seriesData);
+            }, { onlyOnce: true });
+        });
+        
+        function populatePage(seriesData) {
+            const seriesId = seriesData.id;
+
+            // Rellenar detalles de la serie
+            document.title = `${seriesData.title} - PLAYHUB+`;
+            document.querySelector('#poster-state img').src = seriesData.backdrop_path || seriesData.poster_path;
+            document.querySelector('.details-container h1').textContent = seriesData.title;
+            document.getElementById('meta-year').textContent = seriesData.year;
+            document.getElementById('meta-category').textContent = seriesData.category || 'Drama'; 
+            document.getElementById('meta-rating').textContent = seriesData.rating || '8.1';
+            const setupSeeMore=(e,t,o)=>{const i="synopsis"===o?120:50;if(t.length>i){const n=t.substring(0,i)+"... ",s="synopsis"===o?"Ver más":"más";e.innerHTML=`${n} <span class="see-more">${s}</span>`,e.querySelector(".see-more").addEventListener("click",()=>{e.innerHTML=t},{once:!0})}else e.innerHTML=t};
+            setupSeeMore(document.getElementById('synopsis-p'), seriesData.synopsis, 'synopsis');
+            setupSeeMore(document.getElementById('credits-p'), `Créditos: ${seriesData.credits}`, 'credits');
+
+            // Lógica del Trailer
+            const YOUTUBE_TRAILER_ID=seriesData.trailer_id,posterState=document.getElementById("poster-state"),youtubePlayerContainer=document.getElementById("youtube-player");posterState.addEventListener("click",()=>{YOUTUBE_TRAILER_ID&&(posterState.style.display="none",youtubePlayerContainer.innerHTML=`<iframe src="https://www.youtube.com/embed/${YOUTUBE_TRAILER_ID}?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`,youtubePlayerContainer.style.display="block")});
+            
+            // Lógica de Temporadas y Episodios
+            const episodeListContainer = document.getElementById('episode-list-container');
+            const seasonModal = document.getElementById('season-modal');
+            const seasonList = document.getElementById('season-list');
+            const seasonSelectorBtn = document.getElementById('season-selector-btn');
+            const currentSeasonText = document.getElementById('current-season-text');
+
+            function renderEpisodes(seasonNumber) {
+                const season = seriesData.seasons.find(s => s.season_number == seasonNumber);
+                if (!season) return;
+
+                episodeListContainer.innerHTML = season.episodes.map(episode => `
+                    <div class="episode-item" data-url="${episode.streamUrl}">
+                        <div class="episode-thumbnail">
+                            <img src="${episode.thumbnail}" alt="Miniatura del episodio ${episode.episode_number}" loading="lazy">
+                            <span class="material-symbols-outlined play-icon">play_arrow</span>
+                        </div>
+                        <div class="episode-details">
+                            <h3>${episode.episode_number}. ${episode.title}</h3>
+                            <p class="date">${episode.date}</p>
+                        </div>
+                        <a href="wvc-x-callback://open?url=${encodeURIComponent(episode.streamUrl)}" class="episode-download-link" onclick="event.stopPropagation()">
+                            <span class="material-symbols-outlined">download</span>
+                        </a>
+                    </div>`).join('');
+                
+                currentSeasonText.textContent = `Temporada ${seasonNumber}`;
+                document.querySelectorAll('.season-list-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.season == seasonNumber);
+                });
+            }
+
+            episodeListContainer.addEventListener('click', (e) => {
+                const episodeItem = e.target.closest('.episode-item');
+                if (episodeItem && episodeItem.dataset.url) {
+                    startPlayback(episodeItem.dataset.url);
+                }
+            });
+
+            function openSeasonModal() { seasonModal.classList.add('is-active'); document.body.classList.add('modal-open'); }
+            function closeSeasonModal() { seasonModal.classList.remove('is-active'); document.body.classList.remove('modal-open'); }
+
+            if (seriesData.seasons && seriesData.seasons.length > 0) {
+                seasonList.innerHTML = seriesData.seasons.map(s => `<li class="season-list-item" data-season="${s.season_number}">Temporada ${s.season_number}</li>`).join('');
+                seasonSelectorBtn.addEventListener('click', openSeasonModal);
+                document.getElementById('season-modal-close-btn').addEventListener('click', closeSeasonModal);
+                seasonModal.addEventListener('click', (e) => { if(e.target === seasonModal) closeSeasonModal(); });
+
+                document.querySelectorAll('.season-list-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        renderEpisodes(e.target.dataset.season);
+                        closeSeasonModal();
+                    });
+                });
+
+                const firstEpisodeUrl = seriesData.seasons[0].episodes[0]?.streamUrl;
+                const mainPlayButton = document.getElementById('main-play-button');
+                if(firstEpisodeUrl) {
+                    mainPlayButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        startPlayback(firstEpisodeUrl);
+                    });
+                } else {
+                     mainPlayButton.style.display = 'none';
+                }
+
+                renderEpisodes(seriesData.seasons[0].season_number);
+            } else {
+                seasonSelectorBtn.style.display = 'none';
+                episodeListContainer.innerHTML = '<p>No hay episodios disponibles.</p>';
+                document.getElementById('main-play-button').style.display = 'none';
+            }
+
+            // Lógica de Mi Lista
+            const myListBtn=document.getElementById("my-list-btn"),myListIcon=myListBtn.querySelector(".material-symbols-outlined");let myList=JSON.parse(localStorage.getItem("myList")||"[]");function updateMyListButton(){myList.includes(seriesId)?(myListIcon.textContent="check",myListIcon.classList.add("filled")):(myListIcon.textContent="add",myListIcon.classList.remove("filled"))}myListBtn.addEventListener("click",()=>{myList.includes(seriesId)?myList=myList.filter(id=>id!==seriesId):myList.push(seriesId),localStorage.setItem("myList",JSON.stringify(myList)),updateMyListButton()}),updateMyListButton();
+        }
+    </script>
+</body>
+</html>
