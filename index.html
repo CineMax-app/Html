@@ -161,6 +161,29 @@
         .notification-item-content h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
         .notification-item-content p { margin: 0; color: var(--text-secondary-color); font-size: .9rem; }
         .notification-item-content small { display: block; text-align: right; font-size: .8rem; opacity: .6; margin-top: 1rem; }
+        
+        /* --- INICIO: Estilos de Notificación --- */
+        .account-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary-color);
+            border: 2px solid var(--background-color);
+            border-radius: 50%;
+            display: none; /* Oculto por defecto */
+        }
+        .account-icon.has-new-notification .notification-dot {
+            display: block; /* Visible cuando hay notificaciones nuevas */
+        }
+        /* --- FIN: Estilos de Notificación --- */
     </style>
 </head>
 <body>
@@ -176,7 +199,10 @@
                 <div class="nav-menu-trigger" id="home-menu-trigger"><span class="material-symbols-outlined">arrow_drop_down</span> <span>Inicio</span></div>
                 <span id="telegram-trigger" class="nav-icon"><svg viewBox="0 0 24 24" height="24" width="24"><path fill="currentColor" d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"></path></svg></span>
                 <span class="nav-icon material-symbols-outlined search-trigger">search</span>
-                <div id="header-profile-icon" class="nav-icon account-icon"><span class="material-symbols-outlined">account_circle</span></div>
+                <div id="header-profile-icon" class="nav-icon account-icon">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span class="notification-dot"></span>
+                </div>
             </nav>
         </header>
         <main class="homepage-content">
@@ -211,7 +237,10 @@
             </div>
             <nav class="header-nav">
                 <span class="nav-icon material-symbols-outlined search-trigger">search</span>
-                <div id="header-profile-icon-list" class="nav-icon account-icon"><span class="material-symbols-outlined">account_circle</span></div>
+                <div id="header-profile-icon-list" class="nav-icon account-icon">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span class="notification-dot"></span>
+                </div>
             </nav>
         </header>
         <div class="content-grid"></div>
@@ -468,7 +497,17 @@
                 function updateProfilePictures(src) {
                     if (profilePicImg) profilePicImg.src = src;
                     headerProfileIcons.forEach(icon => {
-                        icon.innerHTML = `<img src="${src}" class="profile-pic-header" alt="Perfil">`;
+                        // Elimina el ícono existente (ya sea <span> o <img>), pero conserva el punto de notificación
+                        const existingIcon = icon.querySelector('.material-symbols-outlined, .profile-pic-header');
+                        if (existingIcon) {
+                            existingIcon.remove();
+                        }
+                        // Agrega la nueva imagen al principio del contenedor
+                        const img = document.createElement('img');
+                        img.src = src;
+                        img.className = 'profile-pic-header';
+                        img.alt = 'Perfil';
+                        icon.prepend(img);
                     });
                 }
 
@@ -515,6 +554,28 @@
                     }
                 }
 
+                function updateLastSeenNotification() {
+                    const latestTimestamp = db.notifications.length > 0 ? db.notifications[0].timestamp : 0;
+                    if (latestTimestamp > 0) {
+                        localStorage.setItem('lastSeenNotificationTimestamp', latestTimestamp);
+                    }
+                    document.querySelectorAll('.account-icon').forEach(icon => {
+                        icon.classList.remove('has-new-notification');
+                    });
+                }
+
+                function checkForNewNotifications() {
+                    if (db.notifications.length === 0) return;
+                    const latestTimestamp = db.notifications[0].timestamp; // La lista ya está ordenada
+                    const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp') || 0;
+                    
+                    if (latestTimestamp > lastSeenTimestamp) {
+                        document.querySelectorAll('.account-icon').forEach(icon => {
+                            icon.classList.add('has-new-notification');
+                        });
+                    }
+                }
+
                 document.querySelectorAll(".back-btn").forEach(btn => {
                     btn.addEventListener("click", () => {
                         const lastView = viewHistory.pop() || "homepage-view";
@@ -526,7 +587,10 @@
                 document.querySelectorAll(".account-icon").forEach(btn => btn.addEventListener("click", () => setActiveView("profile-view")));
                 
                 if (document.getElementById("notifications-btn")) {
-                    document.getElementById("notifications-btn").addEventListener("click", () => setActiveView("notifications-view"));
+                    document.getElementById("notifications-btn").addEventListener("click", () => {
+                        setActiveView("notifications-view");
+                        updateLastSeenNotification(); // Marcar notificaciones como vistas
+                    });
                 }
                 
                 homeModal.addEventListener("click", e => {
@@ -625,6 +689,7 @@
                 
                 loadHomepageContent();
                 loadProfilePicture();
+                checkForNewNotifications(); // Comprobar si hay notificaciones nuevas al cargar
                 setActiveView('homepage-view');
                 setupPullToRefresh();
             }
