@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Iniciando Reproductor...</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: sans-serif;
+            color: white;
+        }
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .loading-spinner {
+            width: 32px; height: 32px; border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        h2 { font-size: 1.2rem; font-weight: 500; margin: 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* El iframe ahora está completamente oculto, solo se usa para iniciar la carga */
+        iframe { display: none; }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <h2>Iniciando reproducción...</h2>
+    </div>
+    
+    <iframe id="videoIframe" frameborder="0" allow="autoplay" title="Launcher"></iframe>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const videoIframe = document.getElementById('videoIframe');
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoUrl = urlParams.get('videoUrl');
+
+            function launchAndClose() {
+                // Cerramos la pestaña actual.
+                // El navegador puede pedir confirmación al usuario la primera vez.
+                window.close();
+            }
+            
+            if (videoUrl) {
+                // Asignamos la URL al iframe para que el navegador comience a procesarla.
+                // Esto es lo que inicia la descarga o abre el reproductor externo.
+                videoIframe.src = videoUrl;
+
+                // Después de 4 segundos, cerramos esta pestaña "lanzadora".
+                setTimeout(launchAndClose, 4000);
+
+            } else {
+                // Si no hay URL, muestra un error y cierra después de 3 segundos.
+                document.body.innerHTML = '<h1>Error: URL no válida. Esta pestaña se cerrará.</h1>';
+                setTimeout(launchAndClose, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
