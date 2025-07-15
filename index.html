@@ -56,469 +56,118 @@
             display: none;
             height: 100%;
             overflow-y: auto;
+            position: relative; /* Necesario para el indicador de refresco */
         }
         
         .view.active {
             display: block;
         }
-
-        /* Layout Flex para Vistas con Cabecera Fija */
-        #category-view, #my-list-view, #search-view, #profile-view, #notifications-view {
-            display: none;
-        }
-
-        #category-view.active,
-        #my-list-view.active,
-        #search-view.active,
-        #profile-view.active,
-        #notifications-view.active {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        /* --- Cabecera --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.25rem;
-            background-color: #000;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            flex-shrink: 0;
-        }
-
-        .header-nav {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .nav-icon {
-            font-size: 28px;
-            cursor: pointer;
-            color: var(--text-color);
-        }
-
-        .main-header .header-logo img {
-            height: 28px;
-            width: auto;
-            vertical-align: middle;
-        }
-
-        .main-header .nav-menu-trigger {
-            display: flex;
-            align-items: center;
-            gap: .3rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        #telegram-trigger {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #telegram-trigger svg {
-            height: 24px;
-            fill: var(--text-color);
-        }
         
-        .content-view-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .content-view-header-main {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-grow: 1;
-        }
-        
-        .content-view-header .back-btn {
-            font-size: 28px;
-            cursor: pointer;
-        }
-        
-        .content-view-header .header-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        #category-filter-trigger {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: .3rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 8px;
-            transition: background-color .2s;
-            flex-shrink: 0;
-        }
-        
-        #category-filter-trigger:hover {
-            background-color: var(--card-placeholder-color);
-        }
-
-        .search-header {
-            gap: 1rem;
-        }
-
-        .search-bar-container {
-            position: relative;
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-bar-container .material-symbols-outlined {
+        /* --- INICIO: Estilos para "Deslizar para Actualizar" --- */
+        #pull-to-refresh-indicator {
             position: absolute;
-            left: 12px;
-            font-size: 24px;
-            color: var(--text-secondary-color);
-            pointer-events: none;
-        }
-
-        #search-input {
-            width: 100%;
-            background-color: #333;
-            border: none;
-            border-radius: 8px;
-            padding: .75rem .75rem .75rem 45px;
-            color: var(--text-color);
-            font-size: 1rem;
-            font-family: 'Netflix Sans', sans-serif;
-        }
-
-        #search-input:focus {
-            outline: 0;
-        }
-
-        /* --- Contenido Principal (Grids, Secciones, etc) --- */
-        main, .content-grid, .notifications-list, .profile-view-content {
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        
-        .homepage-content {
-            padding: 0 1.25rem;
-        }
-
-        .hero-slider-container {
-            width: 100%;
-            aspect-ratio: 2/3;
-            border-radius: 12px;
-            margin-top: .5rem;
-            margin-bottom: 2.5rem;
-            overflow: hidden;
-            position: relative;
-            background-color: var(--card-placeholder-color);
-        }
-        
-        .movies-section {
-            margin-bottom: 1.5rem;
-            margin-left: -1.25rem;
-            margin-right: -1.25rem;
-        }
-
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            padding: 0 1.25rem;
-        }
-
-        .movies-container {
-            display: flex;
-            gap: .3rem;
-            overflow-x: auto;
-            padding-bottom: 1rem;
-            padding-left: 1.25rem;
-            padding-right: 1.25rem;
-        }
-
-        .movies-container::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .movies-container .card-portrait {
-            flex: 0 0 calc((100vw - 1.0rem) / 3);
-        }
-        
-        .content-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: .5rem;
-            padding: 1rem 1.25rem;
-            /* --- ESTA ES LA LÍNEA MÁGICA QUE LO ARREGLA TODO --- */
-            align-content: start; 
-        }
-        
-        .content-grid .card-portrait {
-            width: 100%;
-        }
-
-        /* --- Estilos de Tarjetas y Efecto Shimmer --- */
-        .movie-card-placeholder {
-            display: block;
-            position: relative;
-            overflow: hidden;
-            border-radius: 5px;
-            background-color: var(--card-placeholder-color);
-            width: 100%;
-            aspect-ratio: 2/3.0;
-        }
-
-        .movie-card-placeholder::before, .swiper-slide::before {
-            content: '';
-            position: absolute;
-            top: 0;
+            top: -50px; /* Inicialmente oculto arriba */
             left: 0;
             width: 100%;
-            height: 100%;
-            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-            transform: translateX(-100%);
-            animation: shimmer 1.5s infinite;
-        }
-
-        @keyframes shimmer {
-            100% {
-                transform: translateX(100%);
-            }
-        }
-        
-        .movie-card-placeholder img, .swiper-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        .movie-card-placeholder.loaded img, .swiper-slide.loaded img {
-            opacity: 1;
-        }
-
-        .movie-card-placeholder.loaded::before, .swiper-slide.loaded::before {
-            animation: none;
-            display: none;
-        }
-        
-        .swiper-slide {
-            width: 100%;
-            height: 100%;
-            background-color: var(--card-placeholder-color);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* --- Estilos de Modales --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, .7);
-            backdrop-filter: blur(5px);
-            z-index: 2000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity .3s ease, visibility .3s ease;
-        }
-
-        .modal.is-active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal.is-active .modal-content {
-            transform: scale(1);
-        }
-        
-        .modal-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-            transform: scale(.95);
-            transition: transform .3s ease;
-            text-align: center;
-        }
-
-        #home-modal .modal-content,
-        #category-filter-modal .modal-content {
-            background-color: transparent;
-            padding: 0;
-            gap: 2rem;
-        }
-
-        .modal-link {
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-weight: 400;
-        }
-
-        .modal-close-btn {
-            background: var(--card-placeholder-color);
-            border: none;
-            width: 50px;
             height: 50px;
-            border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            cursor: pointer;
-            margin-top: 1rem;
+            transition: top 0.3s ease;
+            z-index: 10;
         }
-        
-        #telegram-modal .modal-content {
-            background-color: #1f1f1f;
-            padding: 2rem;
-            border-radius: 16px;
-            max-width: 320px;
-        }
-
-        #telegram-modal h3 {
-            font-size: 1.2rem;
-            margin: 0;
-        }
-
-        #telegram-modal p {
-            color: var(--text-secondary-color);
-            margin: 0;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            width: 100%;
-        }
-        
-        .modal-actions .btn {
-            flex: 1;
-            justify-content: center;
-            border-radius: 50px;
-            padding: 10px 18px;
-            font-weight: 600;
-        }
-        
-        .btn.primary {
-            background-color: var(--primary-color);
-        }
-
-        .btn.secondary {
-            background-color: #333;
-        }
-
-        /* --- Vista de Perfil --- */
-        .profile-pic-header {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .profile-view-content {
-            padding: 2rem 1.25rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .profile-pic-container {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            overflow: hidden;
-            background-color: #A020F0;
-        }
-
-        .profile-pic-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-option {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            font-size: 1.1rem;
-            width: 100%;
-            cursor: pointer;
-            padding: .5rem 0;
-        }
-
-        .app-version {
-            color: var(--text-secondary-color);
-            font-size: .9rem;
-            text-align: center;
-            margin-top: 3rem;
-        }
-
-        /* --- Vista de Notificaciones --- */
-        .notifications-list {
-            list-style: none;
-            padding: 1rem 1.25rem;
-        }
-
-        .notification-item a {
-            display: block;
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .notification-item-content {
+        #pull-to-refresh-indicator .icon {
             background-color: var(--card-placeholder-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            transition: background-color .2s;
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
         }
-        
-        .notification-item a .notification-item-content:hover {
-            background-color: #333;
+        #pull-to-refresh-indicator .icon.refreshing .material-symbols-outlined {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* --- FIN: Estilos para "Deslizar para Actualizar" --- */
+
+        #category-view, #my-list-view, #search-view, #profile-view, #notifications-view { display: none; }
+        #category-view.active, #my-list-view.active, #search-view.active, #profile-view.active, #notifications-view.active {
+            display: flex; flex-direction: column; height: 100%;
         }
 
-        .notification-item-content h3 {
-            margin: 0 0 .5rem;
-            font-size: 1.1rem;
-        }
-        
-        .notification-item-content p {
-            margin: 0;
-            color: var(--text-secondary-color);
-            font-size: .9rem;
-        }
-        
-        .notification-item-content small {
-            display: block;
-            text-align: right;
-            font-size: .8rem;
-            opacity: .6;
-            margin-top: 1rem;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background-color: #000; position: sticky; top: 0; z-index: 1000; flex-shrink: 0; }
+        .header-nav { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-icon { font-size: 28px; cursor: pointer; color: var(--text-color); }
+        .main-header .header-logo img { height: 28px; width: auto; vertical-align: middle; }
+        .main-header .nav-menu-trigger { display: flex; align-items: center; gap: .3rem; font-size: 1rem; font-weight: 500; cursor: pointer; }
+        #telegram-trigger { display: flex; align-items: center; justify-content: center; }
+        #telegram-trigger svg { height: 24px; fill: var(--text-color); }
+        .content-view-header { display: flex; align-items: center; justify-content: space-between; }
+        .content-view-header-main { display: flex; align-items: center; gap: 1rem; flex-grow: 1; }
+        .content-view-header .back-btn { font-size: 28px; cursor: pointer; }
+        .content-view-header .header-title { font-weight: 600; font-size: 1.2rem; }
+        #category-filter-trigger { background: none; border: none; color: var(--text-color); display: flex; align-items: center; gap: .3rem; font-size: 1rem; font-weight: 500; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background-color .2s; flex-shrink: 0; }
+        #category-filter-trigger:hover { background-color: var(--card-placeholder-color); }
+        .search-header { gap: 1rem; }
+        .search-bar-container { position: relative; flex-grow: 1; display: flex; align-items: center; }
+        .search-bar-container .material-symbols-outlined { position: absolute; left: 12px; font-size: 24px; color: var(--text-secondary-color); pointer-events: none; }
+        #search-input { width: 100%; background-color: #333; border: none; border-radius: 8px; padding: .75rem .75rem .75rem 45px; color: var(--text-color); font-size: 1rem; font-family: 'Netflix Sans', sans-serif; }
+        #search-input:focus { outline: 0; }
+        main, .content-grid, .notifications-list, .profile-view-content { flex-grow: 1; overflow-y: auto; }
+        .homepage-content { padding: 0 1.25rem; }
+        .hero-slider-container { width: 100%; aspect-ratio: 2/3; border-radius: 12px; margin-top: .5rem; margin-bottom: 2.5rem; overflow: hidden; position: relative; background-color: var(--card-placeholder-color); }
+        .movies-section { margin-bottom: 1.5rem; margin-left: -1.25rem; margin-right: -1.25rem; }
+        .section-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; padding: 0 1.25rem; }
+        .movies-container { display: flex; gap: .3rem; overflow-x: auto; padding-bottom: 1rem; padding-left: 1.25rem; padding-right: 1.25rem; }
+        .movies-container::-webkit-scrollbar { display: none; }
+        .movies-container .card-portrait { flex: 0 0 calc((100vw - 1.0rem) / 3); }
+        .content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding: 1rem 1.25rem; align-content: start; }
+        .content-grid .card-portrait { width: 100%; }
+        .movie-card-placeholder { display: block; position: relative; overflow: hidden; border-radius: 5px; background-color: var(--card-placeholder-color); width: 100%; aspect-ratio: 2/3.0; }
+        .movie-card-placeholder::before, .swiper-slide::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.08), transparent); transform: translateX(-100%); animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 100% { transform: translateX(100%); } }
+        .movie-card-placeholder img, .swiper-slide img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .movie-card-placeholder.loaded img, .swiper-slide.loaded img { opacity: 1; }
+        .movie-card-placeholder.loaded::before, .swiper-slide.loaded::before { animation: none; display: none; }
+        .swiper-slide { width: 100%; height: 100%; background-color: var(--card-placeholder-color); position: relative; overflow: hidden; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, .7); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease; }
+        .modal.is-active { opacity: 1; visibility: visible; }
+        .modal.is-active .modal-content { transform: scale(1); }
+        .modal-content { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; transform: scale(.95); transition: transform .3s ease; text-align: center; }
+        #home-modal .modal-content, #category-filter-modal .modal-content { background-color: transparent; padding: 0; gap: 2rem; }
+        .modal-link { color: var(--text-color); text-decoration: none; font-size: 1.5rem; font-weight: 400; }
+        .modal-close-btn { background: var(--card-placeholder-color); border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; margin-top: 1rem; }
+        #telegram-modal .modal-content { background-color: #1f1f1f; padding: 2rem; border-radius: 16px; max-width: 320px; }
+        #telegram-modal h3 { font-size: 1.2rem; margin: 0; }
+        #telegram-modal p { color: var(--text-secondary-color); margin: 0; }
+        .modal-actions { display: flex; gap: 1rem; width: 100%; }
+        .modal-actions .btn { flex: 1; justify-content: center; border-radius: 50px; padding: 10px 18px; font-weight: 600; }
+        .btn.primary { background-color: var(--primary-color); }
+        .btn.secondary { background-color: #333; }
+        .profile-pic-header { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .profile-view-content { padding: 2rem 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+        .profile-pic-container { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; background-color: #A020F0; }
+        .profile-pic-container img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-option { display: flex; align-items: center; gap: 1rem; font-size: 1.1rem; width: 100%; cursor: pointer; padding: .5rem 0; }
+        .app-version { color: var(--text-secondary-color); font-size: .9rem; text-align: center; margin-top: 3rem; }
+        .notifications-list { list-style: none; padding: 1rem 1.25rem; }
+        .notification-item a { display: block; color: inherit; text-decoration: none; }
+        .notification-item-content { background-color: var(--card-placeholder-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; transition: background-color .2s; }
+        .notification-item a .notification-item-content:hover { background-color: #333; }
+        .notification-item-content h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
+        .notification-item-content p { margin: 0; color: var(--text-secondary-color); font-size: .9rem; }
+        .notification-item-content small { display: block; text-align: right; font-size: .8rem; opacity: .6; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <div id="homepage-view" class="view active">
+        <div id="pull-to-refresh-indicator">
+            <div class="icon"><span class="material-symbols-outlined">arrow_downward</span></div>
+        </div>
         <header class="header main-header">
             <div class="header-logo">
                 <img src="https://i.postimg.cc/gknDBNgh/20250711-222153.png" alt="MovieMax Logo">
@@ -636,6 +285,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB6Fkp5pldhVNFcJbxWY8E6QyDKhITt264",
             authDomain: "cine-plus-hd.firebaseapp.com",
@@ -923,10 +573,60 @@
                     if (resultsContainer) resultsContainer.innerHTML = results.map(createCard).join("");
                     if (emptyMsg) emptyMsg.style.display = results.length === 0 ? "block" : "none";
                 });
+
+                function setupPullToRefresh() {
+                    const homepageView = document.getElementById('homepage-view');
+                    const indicator = document.getElementById('pull-to-refresh-indicator');
+                    const indicatorIcon = indicator.querySelector('.icon');
+                    const indicatorIconSpan = indicator.querySelector('.material-symbols-outlined');
+
+                    const PULL_THRESHOLD = 80;
+                    let pullStartY = 0;
+                    let pullMoveY = 0;
+                    let isRefreshing = false;
+
+                    homepageView.addEventListener('touchstart', (e) => {
+                        if (isRefreshing || homepageView.scrollTop !== 0) return;
+                        pullStartY = e.touches[0].clientY;
+                        indicator.style.transition = 'top 0.3s ease';
+                    }, { passive: true });
+
+                    homepageView.addEventListener('touchmove', (e) => {
+                        if (!pullStartY || isRefreshing) return;
+                        pullMoveY = e.touches[0].clientY;
+                        const pullDistance = pullMoveY - pullStartY;
+                        if (pullDistance > 0) {
+                            e.preventDefault();
+                            indicator.style.transition = 'none';
+                            indicator.style.top = `${-50 + pullDistance}px`;
+                            const rotation = Math.min(pullDistance, PULL_THRESHOLD) / PULL_THRESHOLD * 180;
+                            indicatorIconSpan.style.transform = `rotate(${rotation}deg)`;
+                        }
+                    }, { passive: false });
+
+                    homepageView.addEventListener('touchend', () => {
+                        if (isRefreshing || !pullStartY) return;
+                        const pullDistance = pullMoveY - pullStartY;
+                        indicator.style.transition = 'top 0.3s ease';
+                        if (pullDistance > PULL_THRESHOLD) {
+                            isRefreshing = true;
+                            indicator.style.top = '20px';
+                            indicatorIcon.classList.add('refreshing');
+                            indicatorIconSpan.textContent = 'refresh';
+                            indicatorIconSpan.style.transform = 'none';
+                            window.location.reload();
+                        } else {
+                            indicator.style.top = '-50px';
+                        }
+                        pullStartY = 0;
+                        pullMoveY = 0;
+                    });
+                }
                 
                 loadHomepageContent();
                 loadProfilePicture();
                 setActiveView('homepage-view');
+                setupPullToRefresh();
             }
         });
     </script>
