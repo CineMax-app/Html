@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    
+    <title>MovieMax (Firebase Moderno)</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+
+    <style>
+        /* --- Fuentes y Variables Globales --- */
+        @font-face {
+            font-family: 'Netflix Sans';
+            src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Rg.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        :root {
+            --background-color: #000;
+            --card-placeholder-color: #1f1f1f;
+            --text-color: #fff;
+            --text-secondary-color: #aaa;
+            --primary-color: #E50914;
+        }
+
+        /* --- Reseteo y Estilos Base --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Netflix Sans', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* --- Vistas de la Aplicación --- */
+        .view {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            position: relative; /* Necesario para el indicador de refresco */
+            padding-bottom: 70px; /* Espacio para el menú inferior */
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        /* --- INICIO: Estilos para "Deslizar para Actualizar" --- */
+        #pull-to-refresh-indicator {
+            position: absolute;
+            top: -50px; /* Inicialmente oculto arriba */
+            left: 0;
+            width: 100%;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: top 0.3s ease;
+            z-index: 10;
+        }
+        #pull-to-refresh-indicator .icon {
+            background-color: var(--card-placeholder-color);
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+        #pull-to-refresh-indicator .icon.refreshing .material-symbols-outlined {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* --- FIN: Estilos para "Deslizar para Actualizar" --- */
+
+        #category-view, #my-list-view, #search-view, #profile-view, #notifications-view { display: none; }
+        #category-view.active, #my-list-view.active, #search-view.active, #profile-view.active, #notifications-view.active {
+            display: flex; flex-direction: column; height: 100%;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background-color: #000; position: sticky; top: 0; z-index: 1000; flex-shrink: 0; }
+        .header-nav { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-icon { font-size: 28px; cursor: pointer; color: var(--text-color); }
+        .main-header .header-logo img { height: 28px; width: auto; vertical-align: middle; }
+        .main-header .nav-menu-trigger { display: flex; align-items: center; gap: .3rem; font-size: 1rem; font-weight: 500; cursor: pointer; }
+        #telegram-trigger { display: flex; align-items: center; justify-content: center; }
+        #telegram-trigger svg { height: 24px; fill: var(--text-color); }
+        .content-view-header { display: flex; align-items: center; justify-content: space-between; }
+        .content-view-header-main { display: flex; align-items: center; gap: 1rem; flex-grow: 1; }
+        .content-view-header .back-btn { font-size: 28px; cursor: pointer; }
+        .content-view-header .header-title { font-weight: 600; font-size: 1.2rem; }
+        #category-filter-trigger { background: none; border: none; color: var(--text-color); display: flex; align-items: center; gap: .3rem; font-size: 1rem; font-weight: 500; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background-color .2s; flex-shrink: 0; }
+        #category-filter-trigger:hover { background-color: var(--card-placeholder-color); }
+        .search-header { gap: 1rem; }
+        .search-bar-container { position: relative; flex-grow: 1; display: flex; align-items: center; }
+        .search-bar-container .material-symbols-outlined { position: absolute; left: 12px; font-size: 24px; color: var(--text-secondary-color); pointer-events: none; }
+        #search-input { width: 100%; background-color: #333; border: none; border-radius: 8px; padding: .75rem .75rem .75rem 45px; color: var(--text-color); font-size: 1rem; font-family: 'Netflix Sans', sans-serif; }
+        #search-input:focus { outline: 0; }
+        main, .content-grid, .notifications-list, .profile-view-content { flex-grow: 1; overflow-y: auto; }
+        .homepage-content { padding: 0 1.25rem; }
+        .hero-slider-container { width: 100%; aspect-ratio: 2/3; border-radius: 12px; margin-top: .5rem; margin-bottom: 2.5rem; overflow: hidden; position: relative; background-color: var(--card-placeholder-color); }
+        .movies-section { margin-bottom: 1.5rem; margin-left: -1.25rem; margin-right: -1.25rem; }
+        .section-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; padding: 0 1.25rem; }
+        .movies-container { display: flex; gap: .3rem; overflow-x: auto; padding-bottom: 1rem; padding-left: 1.25rem; padding-right: 1.25rem; }
+        .movies-container::-webkit-scrollbar { display: none; }
+        .movies-container .card-portrait { flex: 0 0 calc((100vw - 1.0rem) / 3); }
+        .content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding: 1rem 1.25rem; align-content: start; }
+        .content-grid .card-portrait { width: 100%; }
+        .movie-card-placeholder { display: block; position: relative; overflow: hidden; border-radius: 5px; background-color: var(--card-placeholder-color); width: 100%; aspect-ratio: 2/3.0; }
+        .movie-card-placeholder::before, .swiper-slide::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.08), transparent); transform: translateX(-100%); animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 100% { transform: translateX(100%); } }
+        .movie-card-placeholder img, .swiper-slide img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .movie-card-placeholder.loaded img, .swiper-slide.loaded img { opacity: 1; }
+        .movie-card-placeholder.loaded::before, .swiper-slide.loaded::before { animation: none; display: none; }
+        .swiper-slide { width: 100%; height: 100%; background-color: var(--card-placeholder-color); position: relative; overflow: hidden; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, .7); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease; }
+        .modal.is-active { opacity: 1; visibility: visible; }
+        .modal.is-active .modal-content { transform: scale(1); }
+        .modal-content { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; transform: scale(.95); transition: transform .3s ease; text-align: center; }
+        #home-modal .modal-content, #category-filter-modal .modal-content { background-color: transparent; padding: 0; gap: 2rem; }
+        .modal-link { color: var(--text-color); text-decoration: none; font-size: 1.5rem; font-weight: 400; }
+        .modal-close-btn { background: var(--card-placeholder-color); border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; margin-top: 1rem; }
+        #telegram-modal .modal-content { background-color: #1f1f1f; padding: 2rem; border-radius: 16px; max-width: 320px; }
+        #telegram-modal h3 { font-size: 1.2rem; margin: 0; }
+        #telegram-modal p { color: var(--text-secondary-color); margin: 0; }
+        .modal-actions { display: flex; gap: 1rem; width: 100%; }
+        .modal-actions .btn { flex: 1; justify-content: center; border-radius: 50px; padding: 10px 18px; font-weight: 600; }
+        .btn.primary { background-color: var(--primary-color); }
+        .btn.secondary { background-color: #333; }
+        .profile-pic-header { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .profile-view-content { padding: 2rem 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+        .profile-pic-container { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; background-color: #A020F0; }
+        .profile-pic-container img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-option { display: flex; align-items: center; gap: 1rem; font-size: 1.1rem; width: 100%; cursor: pointer; padding: .5rem 0; }
+        .app-version { color: var(--text-secondary-color); font-size: .9rem; text-align: center; margin-top: 3rem; }
+        .notifications-list { list-style: none; padding: 1rem 1.25rem; }
+        .notification-item a { display: block; color: inherit; text-decoration: none; }
+        .notification-item-content { background-color: var(--card-placeholder-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; transition: background-color .2s; }
+        .notification-item a .notification-item-content:hover { background-color: #333; }
+        .notification-item-content h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
+        .notification-item-content p { margin: 0; color: var(--text-secondary-color); font-size: .9rem; }
+        .notification-item-content small { display: block; text-align: right; font-size: .8rem; opacity: .6; margin-top: 1rem; }
+        
+        /* --- INICIO: Estilos de Notificación --- */
+        .account-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary-color);
+            border: 2px solid var(--background-color);
+            border-radius: 50%;
+            display: none; /* Oculto por defecto */
+        }
+        .account-icon.has-new-notification .notification-dot {
+            display: block; /* Visible cuando hay notificaciones nuevas */
+        }
+        /* --- FIN: Estilos de Notificación --- */
+
+        /* --- INICIO: Estilos del Menú Inferior --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #000000; /* Color de fondo cambiado a negro */
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 1500;
+            border-top: 1px solid #222;
+        }
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary-color);
+            text-decoration: none;
+            flex-grow: 1;
+            padding: 4px 0;
+            transition: color 0.2s;
+        }
+        .bottom-nav-item .material-symbols-outlined {
+            font-size: 24px;
+        }
+        .bottom-nav-label {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .bottom-nav-item.active {
+            color: var(--text-color);
+        }
+        /* --- FIN: Estilos del Menú Inferior --- */
+
+    </style>
+</head>
+<body>
+    <div id="homepage-view" class="view active">
+        <div id="pull-to-refresh-indicator">
+            <div class="icon"><span class="material-symbols-outlined">arrow_downward</span></div>
+        </div>
+        <header class="header main-header">
+            <div class="header-logo">
+                <img src="https://i.postimg.cc/gknDBNgh/20250711-222153.png" alt="MovieMax Logo">
+            </div>
+            <nav class="header-nav">
+                <div class="nav-menu-trigger" id="home-menu-trigger"><span class="material-symbols-outlined">arrow_drop_down</span> <span>Inicio</span></div>
+                <span id="telegram-trigger" class="nav-icon"><svg viewBox="0 0 24 24" height="24" width="24"><path fill="currentColor" d="M9.78 18.65l.28-4.23l7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3L3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"></path></svg></span>
+                <span class="nav-icon material-symbols-outlined search-trigger">search</span>
+                <div id="header-profile-icon" class="nav-icon account-icon">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span class="notification-dot"></span>
+                </div>
+            </nav>
+        </header>
+        <main class="homepage-content">
+            <div class="hero-slider-container swiper"><div class="swiper-wrapper"></div></div>
+            <section class="movies-section" id="agregados-recientes"><h2 class="section-title">Agregados Recientes</h2><div class="movies-container"></div></section>
+            <section class="movies-section" id="tendencias"><h2 class="section-title">Tendencias</h2><div class="movies-container"></div></section>
+            <section class="movies-section" id="estrenos"><h2 class="section-title">Estrenos</h2><div class="movies-container"></div></section>
+            <section class="movies-section" id="series"><h2 class="section-title">Series</h2><div class="movies-container"></div></section>
+            <section class="movies-section" id="peliculas"><h2 class="section-title">Películas</h2><div class="movies-container"></div></section>
+        </main>
+    </div>
+
+    <div id="category-view" class="view">
+        <header class="header content-view-header">
+            <div class="content-view-header-main">
+                <span class="back-btn material-symbols-outlined">arrow_back</span>
+                <span class="header-title"></span>
+            </div>
+            <button id="category-filter-trigger">
+                <span>Categorías</span>
+                <span class="material-symbols-outlined">arrow_drop_down</span>
+            </button>
+        </header>
+        <div class="content-grid"></div>
+    </div>
+
+    <div id="my-list-view" class="view">
+        <header class="header content-view-header">
+            <div class="content-view-header-main">
+                <span class="back-btn material-symbols-outlined">arrow_back</span>
+                <span class="header-title">Mi Lista</span>
+            </div>
+            <nav class="header-nav">
+                <span class="nav-icon material-symbols-outlined search-trigger">search</span>
+                <div id="header-profile-icon-list" class="nav-icon account-icon">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span class="notification-dot"></span>
+                </div>
+            </nav>
+        </header>
+        <div class="content-grid"></div>
+        <p id="empty-list-message" style="display:none;text-align:center;padding:2rem;">Tu lista está vacía.</p>
+    </div>
+
+    <div id="search-view" class="view">
+        <header class="header search-header">
+            <span class="back-btn material-symbols-outlined">arrow_back</span>
+            <div class="search-bar-container">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="search-input" placeholder="Buscar películas o series...">
+            </div>
+        </header>
+        <div class="content-grid" id="search-results-container"></div>
+        <p id="empty-search-message" style="display:none;text-align:center;padding:2rem;">No se encontraron resultados.</p>
+    </div>
+
+    <div id="profile-view" class="view">
+        <header class="header content-view-header">
+            <div class="content-view-header-main">
+                <span class="back-btn material-symbols-outlined">arrow_back</span>
+                <span class="header-title">Perfil y más</span>
+            </div>
+        </header>
+        <main class="profile-view-content">
+            <div class="profile-pic-container"><img id="profile-pic-img" src="" alt="Foto de perfil"></div>
+            <div id="edit-profile-btn" class="profile-option"><span class="material-symbols-outlined">edit</span><span>Administrar perfil</span></div>
+            <div id="notifications-btn" class="profile-option"><span class="material-symbols-outlined">notifications</span><span>Notificaciones</span></div>
+            <div class="app-version"><span>Versión 1.0.0</span></div>
+        </main>
+    </div>
+
+    <div id="notifications-view" class="view">
+        <header class="header content-view-header">
+            <div class="content-view-header-main">
+                <span class="back-btn material-symbols-outlined">arrow_back</span>
+                <span class="header-title">Notificaciones</span>
+            </div>
+        </header>
+        <ul id="notifications-list" class="notifications-list"></ul>
+    </div>
+    
+    <!-- Menú de Navegación Inferior -->
+    <nav class="bottom-nav">
+        <a href="#" class="bottom-nav-item active" data-view="homepage-view">
+            <span class="material-symbols-outlined">home</span>
+            <span class="bottom-nav-label">Inicio</span>
+        </a>
+        <!-- IMPORTANTE: Reemplaza "#" con tu enlace de IPTV -->
+        <a href="#" id="iptv-link" target="_blank" class="bottom-nav-item">
+            <span class="material-symbols-outlined">tv</span>
+            <span class="bottom-nav-label">IPTV</span>
+        </a>
+        <a href="tg://join?invite=18xEr9tqeUAxZDgx" target="_blank" class="bottom-nav-item">
+            <span class="material-symbols-outlined">send</span>
+            <span class="bottom-nav-label">Telegram</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-view="my-list-view">
+            <span class="material-symbols-outlined">list_alt</span>
+            <span class="bottom-nav-label">Mi Lista</span>
+        </a>
+    </nav>
+
+    <!-- Modales -->
+    <div class="modal" id="home-modal">
+        <div class="modal-content">
+            <a href="#" class="modal-link" data-type="movie">Películas</a> 
+            <a href="#" class="modal-link" data-type="series">Series</a> 
+            <a href="#" class="modal-link" data-type="my-list">Mi Lista</a>
+            <button class="modal-close-btn" data-target-modal="home-modal"><span class="material-symbols-outlined">close</span></button>
+        </div>
+    </div>
+    
+    <div class="modal" id="category-filter-modal"><div class="modal-content"></div></div>
+    
+    <div class="modal" id="telegram-modal">
+        <div class="modal-content">
+            <h3>Únete al Grupo</h3>
+            <p>Te vamos a redirigir a nuestro grupo de Telegram. Podrás pedir tu película o serie favorita.</p>
+            <div class="modal-actions">
+                <button id="telegram-cancel-btn" class="btn secondary">Cancelar</button>
+                <a href="tg://join?invite=18xEr9tqeUAxZDgx" target="_blank" id="telegram-confirm-btn" class="btn primary">Unirse</a>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="profile-pic-input" accept="image/*" style="display: none;">
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6Fkp5pldhVNFcJbxWY8E6QyDKhITt264",
+            authDomain: "cine-plus-hd.firebaseapp.com",
+            databaseURL: "https://cine-plus-hd.firebaseio.com",
+            projectId: "cine-plus-hd",
+            storageBucket: "cine-plus-hd.firebasestorage.app",
+            messagingSenderId: "838484037238",
+            appId: "1:838484037238:web:1ee6412b7cae0835a4d957"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const contentRef = ref(database, 'content');
+            const notificationsRef = ref(database, 'notifications');
+            const sliderRef = ref(database, 'slider_items');
+            
+            try {
+                const [contentSnap, notificationsSnap, sliderSnap] = await Promise.all([
+                    get(contentRef), get(notificationsRef), get(sliderRef)
+                ]);
+
+                const db = {
+                    content: contentSnap.val() || [],
+                    notifications: (notificationsSnap.val() || []).sort((a,b) => b.timestamp - a.timestamp),
+                    sliderItems: sliderSnap.val() || []
+                };
+                
+                runApp(db);
+
+            } catch (error) {
+                console.error("Error al cargar datos de Firebase.", error);
+                document.body.innerHTML = '<h1>Error de conexión. Intenta de nuevo más tarde.</h1>';
+            }
+
+            function runApp(db) {
+                const views = document.querySelectorAll(".view");
+                const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
+                let viewHistory = ["homepage-view"];
+                let currentCategoryViewType = "movie";
+                let currentCategoryFilter = "Todos";
+                
+                // Función para actualizar el estado activo del menú inferior
+                function updateBottomNav(viewId) {
+                    bottomNavItems.forEach(item => {
+                        item.classList.toggle("active", item.dataset.view === viewId);
+                    });
+                }
+
+                function setActiveView(viewId) {
+                    const activeView = document.querySelector(".view.active");
+                    if (activeView && activeView.id !== viewId) {
+                        if (viewHistory[viewHistory.length - 1] !== activeView.id) {
+                            viewHistory.push(activeView.id);
+                        }
+                    }
+                    views.forEach(view => view.classList.remove("active"));
+                    const newView = document.getElementById(viewId);
+                    if (newView) {
+                        newView.classList.add("active");
+                        newView.scrollTo(0, 0); 
+                        updateBottomNav(viewId); // Actualiza el menú inferior
+                    }
+                    if (viewId === 'notifications-view') {
+                        loadNotifications();
+                    }
+                }
+
+                function setupModal(triggerEl, modalEl) {
+                    if (triggerEl) {
+                        triggerEl.addEventListener("click", e => {
+                            e.stopPropagation();
+                            modalEl.classList.add("is-active");
+                        });
+                    }
+                    modalEl.addEventListener("click", e => {
+                        if (e.target === modalEl) {
+                            modalEl.classList.remove("is-active");
+                        }
+                    });
+                }
+                
+                const homeModal = document.getElementById("home-modal");
+                setupModal(document.getElementById("home-menu-trigger"), homeModal);
+                
+                const categoryFilterModal = document.getElementById("category-filter-modal");
+                setupModal(document.getElementById("category-filter-trigger"), categoryFilterModal);
+
+                const telegramModal = document.getElementById("telegram-modal");
+                setupModal(document.getElementById("telegram-trigger"), telegramModal);
+                document.getElementById("telegram-cancel-btn").addEventListener("click", () => telegramModal.classList.remove("is-active"));
+                document.getElementById("telegram-confirm-btn").addEventListener("click", () => telegramModal.classList.remove("is-active"));
+
+                function createCard(item) {
+                    const page = item.type === 'movie' ? 'peliculas.html' : 'series.html';
+                    const poster = item.poster_path || '';
+                    return `<div class="card-portrait">
+                                <a href="${page}?id=${item.id}" class="movie-card-placeholder">
+                                    <img src="${poster}" alt="${item.title}" loading="lazy" onload="this.parentElement.classList.add('loaded')">
+                                </a>
+                            </div>`;
+                }
+
+                function populateCategoryView() {
+                    const contentForType = db.content.filter(item => item.type === currentCategoryViewType);
+                    const titleEl = document.querySelector("#category-view .header-title");
+                    const titleBase = currentCategoryViewType === 'movie' ? 'Películas' : 'Series';
+                    titleEl.textContent = currentCategoryFilter === 'Todos' ? titleBase : `${titleBase} - ${currentCategoryFilter}`;
+                    
+                    const gridEl = document.querySelector("#category-view .content-grid");
+                    const filteredData = currentCategoryFilter === 'Todos' 
+                        ? contentForType 
+                        : contentForType.filter(item => (item.category || "").includes(currentCategoryFilter));
+
+                    if (filteredData.length > 0) {
+                        gridEl.innerHTML = filteredData.map(createCard).join("");
+                    } else {
+                        gridEl.innerHTML = `<p style="text-align:center; padding: 2rem; grid-column: 1 / -1;">No hay contenido en esta categoría.</p>`;
+                    }
+                }
+
+                document.getElementById("category-filter-trigger").addEventListener("click", () => {
+                    const contentForType = db.content.filter(item => item.type === currentCategoryViewType);
+                    const categories = [...new Set(contentForType.flatMap(item => (item.category || "").split(',').map(c => c.trim()).filter(Boolean)))].sort();
+                    const modalContent = categoryFilterModal.querySelector(".modal-content");
+                    modalContent.innerHTML = `
+                        <a href="#" class="modal-link" data-category="Todos">Todos</a>
+                        ${categories.map(cat => `<a href="#" class="modal-link" data-category="${cat}">${cat}</a>`).join("")}
+                        <button class="modal-close-btn"><span class="material-symbols-outlined">close</span></button>
+                    `;
+                    modalContent.querySelector(".modal-close-btn").addEventListener("click", () => categoryFilterModal.classList.remove("is-active"));
+                });
+
+                categoryFilterModal.addEventListener("click", e => {
+                    if (e.target.classList.contains("modal-link")) {
+                        e.preventDefault();
+                        currentCategoryFilter = e.target.dataset.category;
+                        populateCategoryView();
+                        categoryFilterModal.classList.remove("is-active");
+                    }
+                });
+
+                function loadHomepageContent() {
+                    const swiperWrapper = document.querySelector(".hero-slider-container .swiper-wrapper");
+                    const sliderContent = db.sliderItems.map(id => db.content.find(item => item.id === id)).filter(item => item && item.poster_path);
+                    
+                    if (sliderContent.length > 0) {
+                        const highRes = "https://image.tmdb.org/t/p/original";
+                        const lowRes = "https://image.tmdb.org/t/p/w500";
+                        swiperWrapper.innerHTML = sliderContent.map(item => {
+                            const page = item.type === 'movie' ? 'peliculas.html' : 'series.html';
+                            const poster = item.poster_path.includes(lowRes) ? item.poster_path.replace(lowRes, highRes) : item.poster_path;
+                            return `<div class="swiper-slide">
+                                        <a href="${page}?id=${item.id}">
+                                            <img src="${poster}" alt="${item.title}" onload="this.parentElement.parentElement.classList.add('loaded')">
+                                        </a>
+                                    </div>`;
+                        }).join("");
+                        new Swiper(".hero-slider-container", { loop: sliderContent.length > 1, autoplay: { delay: 4000, disableOnInteraction: false } });
+                    } else {
+                        if (swiperWrapper) swiperWrapper.parentElement.style.display = "none";
+                    }
+
+                    const populateSection = (selector, data) => {
+                        const container = document.querySelector(selector);
+                        if (container && data.length > 0) {
+                            container.innerHTML = data.map(createCard).join("");
+                        } else if (container) {
+                            container.parentElement.style.display = "none";
+                        }
+                    };
+
+                    const movies = db.content.filter(item => item.type === 'movie');
+                    const series = db.content.filter(item => item.type === 'series');
+                    const currentYear = new Date().getFullYear().toString();
+
+                    populateSection("#agregados-recientes .movies-container", [...db.content].reverse().slice(0, 10));
+                    populateSection("#tendencias .movies-container", [...db.content].sort(() => 0.5 - Math.random()).slice(0, 10));
+                    populateSection("#estrenos .movies-container", db.content.filter(item => item.year === currentYear).reverse().slice(0, 10));
+                    populateSection("#series .movies-container", [...series].reverse().slice(0, 10));
+                    populateSection("#peliculas .movies-container", [...movies].reverse().slice(0, 10));
+                }
+                
+                const profilePicInput = document.getElementById("profile-pic-input");
+                const profilePicImg = document.getElementById("profile-pic-img");
+                const headerProfileIcons = document.querySelectorAll(".account-icon");
+
+                function updateProfilePictures(src) {
+                    if (profilePicImg) profilePicImg.src = src;
+                    headerProfileIcons.forEach(icon => {
+                        const existingIcon = icon.querySelector('.material-symbols-outlined, .profile-pic-header');
+                        if (existingIcon) {
+                            existingIcon.remove();
+                        }
+                        const img = document.createElement('img');
+                        img.src = src;
+                        img.className = 'profile-pic-header';
+                        img.alt = 'Perfil';
+                        icon.prepend(img);
+                    });
+                }
+
+                function loadProfilePicture() {
+                    const savedPic = localStorage.getItem("profilePicture");
+                    if (savedPic) {
+                        updateProfilePictures(savedPic);
+                    }
+                }
+
+                if (document.getElementById("edit-profile-btn")) {
+                    document.getElementById("edit-profile-btn").addEventListener("click", () => profilePicInput.click());
+                }
+                if (profilePicInput) {
+                    profilePicInput.addEventListener("change", e => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = e => {
+                                localStorage.setItem("profilePicture", e.target.result);
+                                updateProfilePictures(e.target.result);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+
+                function loadNotifications() {
+                    const listEl = document.getElementById("notifications-list");
+                    if (db.notifications.length > 0) {
+                        listEl.innerHTML = db.notifications.map(notif => {
+                            const contentHtml = `<div class="notification-item-content"><h3>${notif.title}</h3><p>${notif.message}</p><small>${new Date(notif.timestamp).toLocaleString()}</small></div>`;
+                            let link = "";
+                            if (notif.contentId) {
+                                const contentItem = db.content.find(item => item.id === notif.contentId);
+                                if (contentItem) {
+                                    link = `${contentItem.type === 'movie' ? 'peliculas.html' : 'series.html'}?id=${contentItem.id}`;
+                                }
+                            }
+                            return `<li class="notification-item">${link ? `<a href="${link}" onclick="event.preventDefault(); window.location.href='${link}';">${contentHtml}</a>` : contentHtml}</li>`;
+                        }).join("");
+                    } else {
+                        listEl.innerHTML = '<li style="text-align:center;padding:2rem;">No hay notificaciones.</li>';
+                    }
+                }
+
+                function updateLastSeenNotification() {
+                    const latestTimestamp = db.notifications.length > 0 ? db.notifications[0].timestamp : 0;
+                    if (latestTimestamp > 0) {
+                        localStorage.setItem('lastSeenNotificationTimestamp', latestTimestamp);
+                    }
+                    document.querySelectorAll('.account-icon').forEach(icon => {
+                        icon.classList.remove('has-new-notification');
+                    });
+                }
+
+                function checkForNewNotifications() {
+                    if (db.notifications.length === 0) return;
+                    const latestTimestamp = db.notifications[0].timestamp;
+                    const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp') || 0;
+                    
+                    if (latestTimestamp > lastSeenTimestamp) {
+                        document.querySelectorAll('.account-icon').forEach(icon => {
+                            icon.classList.add('has-new-notification');
+                        });
+                    }
+                }
+
+                document.querySelectorAll(".back-btn").forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        const lastView = viewHistory.pop() || "homepage-view";
+                        setActiveView(lastView);
+                    });
+                });
+                
+                document.querySelectorAll(".search-trigger").forEach(btn => btn.addEventListener("click", () => setActiveView("search-view")));
+                document.querySelectorAll(".account-icon").forEach(btn => btn.addEventListener("click", () => setActiveView("profile-view")));
+                
+                if (document.getElementById("notifications-btn")) {
+                    document.getElementById("notifications-btn").addEventListener("click", () => {
+                        setActiveView("notifications-view");
+                        updateLastSeenNotification();
+                    });
+                }
+                
+                homeModal.addEventListener("click", e => {
+                    if (!e.target.classList.contains("modal-link")) return;
+                    e.preventDefault();
+                    const type = e.target.dataset.type;
+                    if (type === 'movie' || type === 'series') {
+                        currentCategoryViewType = type;
+                        currentCategoryFilter = "Todos";
+                        setActiveView("category-view");
+                        populateCategoryView();
+                    } else if (type === 'my-list') {
+                        setActiveView("my-list-view");
+                        populateMyListView();
+                    }
+                    homeModal.classList.remove("is-active");
+                });
+                homeModal.querySelector(".modal-close-btn").addEventListener("click", () => homeModal.classList.remove("is-active"));
+
+                function populateMyListView() {
+                    const gridEl = document.querySelector("#my-list-view .content-grid");
+                    const emptyMsg = document.getElementById("empty-list-message");
+                    const myListIds = JSON.parse(localStorage.getItem("myList") || "[]");
+                    const myItems = db.content.filter(item => myListIds.includes(item.id)).reverse();
+                    
+                    if (gridEl) gridEl.innerHTML = myItems.map(createCard).join("");
+                    if (emptyMsg) {
+                        emptyMsg.style.display = myItems.length === 0 ? "block" : "none";
+                    }
+                }
+
+                document.getElementById("search-input").addEventListener("input", e => {
+                    const query = e.target.value.toLowerCase().trim();
+                    const resultsContainer = document.getElementById("search-results-container");
+                    const emptyMsg = document.getElementById("empty-search-message");
+
+                    if (query.length < 2) {
+                        if (resultsContainer) resultsContainer.innerHTML = "";
+                        if (emptyMsg) emptyMsg.style.display = "none";
+                        return;
+                    }
+                    
+                    const results = db.content.filter(item => item.title.toLowerCase().includes(query));
+                    if (resultsContainer) resultsContainer.innerHTML = results.map(createCard).join("");
+                    if (emptyMsg) emptyMsg.style.display = results.length === 0 ? "block" : "none";
+                });
+
+                function setupPullToRefresh() {
+                    const homepageView = document.getElementById('homepage-view');
+                    const indicator = document.getElementById('pull-to-refresh-indicator');
+                    const indicatorIcon = indicator.querySelector('.icon');
+                    const indicatorIconSpan = indicator.querySelector('.material-symbols-outlined');
+
+                    const PULL_THRESHOLD = 80;
+                    let pullStartY = 0;
+                    let pullMoveY = 0;
+                    let isRefreshing = false;
+
+                    homepageView.addEventListener('touchstart', (e) => {
+                        if (isRefreshing || homepageView.scrollTop !== 0) return;
+                        pullStartY = e.touches[0].clientY;
+                        indicator.style.transition = 'top 0.3s ease';
+                    }, { passive: true });
+
+                    homepageView.addEventListener('touchmove', (e) => {
+                        if (!pullStartY || isRefreshing) return;
+                        pullMoveY = e.touches[0].clientY;
+                        const pullDistance = pullMoveY - pullStartY;
+                        if (pullDistance > 0) {
+                            e.preventDefault();
+                            indicator.style.transition = 'none';
+                            indicator.style.top = `${-50 + pullDistance}px`;
+                            const rotation = Math.min(pullDistance, PULL_THRESHOLD) / PULL_THRESHOLD * 180;
+                            indicatorIconSpan.style.transform = `rotate(${rotation}deg)`;
+                        }
+                    }, { passive: false });
+
+                    homepageView.addEventListener('touchend', () => {
+                        if (isRefreshing || !pullStartY) return;
+                        const pullDistance = pullMoveY - pullStartY;
+                        indicator.style.transition = 'top 0.3s ease';
+                        if (pullDistance > PULL_THRESHOLD) {
+                            isRefreshing = true;
+                            indicator.style.top = '20px';
+                            indicatorIcon.classList.add('refreshing');
+                            indicatorIconSpan.textContent = 'refresh';
+                            indicatorIconSpan.style.transform = 'none';
+                            window.location.reload();
+                        } else {
+                            indicator.style.top = '-50px';
+                        }
+                        pullStartY = 0;
+                        pullMoveY = 0;
+                    });
+                }
+                
+                // --- INICIO: Lógica del Menú Inferior ---
+                bottomNavItems.forEach(item => {
+                    // Los enlaces externos como IPTV y Telegram se manejan con `target="_blank"` en el HTML.
+                    // Solo añadimos listeners para la navegación interna.
+                    if (item.dataset.view) {
+                        item.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            const viewId = item.dataset.view;
+                            setActiveView(viewId);
+                            if (viewId === 'my-list-view') {
+                                populateMyListView();
+                            }
+                        });
+                    }
+                });
+                // --- FIN: Lógica del Menú Inferior ---
+
+                loadHomepageContent();
+                loadProfilePicture();
+                checkForNewNotifications();
+                setActiveView('homepage-view');
+                setupPullToRefresh();
+            }
+        });
+    </script>
+</body>
+</html>
