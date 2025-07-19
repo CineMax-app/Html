@@ -57,6 +57,7 @@
             height: 100%;
             overflow-y: auto;
             position: relative; /* Necesario para el indicador de refresco */
+            padding-bottom: 70px; /* Espacio para el menú inferior */
         }
         
         .view.active {
@@ -184,6 +185,44 @@
             display: block; /* Visible cuando hay notificaciones nuevas */
         }
         /* --- FIN: Estilos de Notificación --- */
+
+        /* --- INICIO: Estilos del Menú Inferior --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #000000; /* Color de fondo cambiado a negro */
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 1500;
+            border-top: 1px solid #222;
+        }
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary-color);
+            text-decoration: none;
+            flex-grow: 1;
+            padding: 4px 0;
+            transition: color 0.2s;
+        }
+        .bottom-nav-item .material-symbols-outlined {
+            font-size: 24px;
+        }
+        .bottom-nav-label {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .bottom-nav-item.active {
+            color: var(--text-color);
+        }
+        /* --- FIN: Estilos del Menú Inferior --- */
+
     </style>
 </head>
 <body>
@@ -284,6 +323,27 @@
         <ul id="notifications-list" class="notifications-list"></ul>
     </div>
     
+    <!-- Menú de Navegación Inferior -->
+    <nav class="bottom-nav">
+        <a href="#" class="bottom-nav-item active" data-view="homepage-view">
+            <span class="material-symbols-outlined">home</span>
+            <span class="bottom-nav-label">Inicio</span>
+        </a>
+        <!-- IMPORTANTE: Reemplaza "#" con tu enlace de IPTV -->
+        <a href="#" id="iptv-link" target="_blank" class="bottom-nav-item">
+            <span class="material-symbols-outlined">tv</span>
+            <span class="bottom-nav-label">IPTV</span>
+        </a>
+        <a href="https://t.me/+18xEr9tqeUAxZDgx" target="_blank" class="bottom-nav-item">
+            <span class="material-symbols-outlined">send</span>
+            <span class="bottom-nav-label">Telegram</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-view="my-list-view">
+            <span class="material-symbols-outlined">list_alt</span>
+            <span class="bottom-nav-label">Mi Lista</span>
+        </a>
+    </nav>
+
     <!-- Modales -->
     <div class="modal" id="home-modal">
         <div class="modal-content">
@@ -353,9 +413,17 @@
 
             function runApp(db) {
                 const views = document.querySelectorAll(".view");
+                const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
                 let viewHistory = ["homepage-view"];
                 let currentCategoryViewType = "movie";
                 let currentCategoryFilter = "Todos";
+                
+                // Función para actualizar el estado activo del menú inferior
+                function updateBottomNav(viewId) {
+                    bottomNavItems.forEach(item => {
+                        item.classList.toggle("active", item.dataset.view === viewId);
+                    });
+                }
 
                 function setActiveView(viewId) {
                     const activeView = document.querySelector(".view.active");
@@ -369,6 +437,7 @@
                     if (newView) {
                         newView.classList.add("active");
                         newView.scrollTo(0, 0); 
+                        updateBottomNav(viewId); // Actualiza el menú inferior
                     }
                     if (viewId === 'notifications-view') {
                         loadNotifications();
@@ -497,12 +566,10 @@
                 function updateProfilePictures(src) {
                     if (profilePicImg) profilePicImg.src = src;
                     headerProfileIcons.forEach(icon => {
-                        // Elimina el ícono existente (ya sea <span> o <img>), pero conserva el punto de notificación
                         const existingIcon = icon.querySelector('.material-symbols-outlined, .profile-pic-header');
                         if (existingIcon) {
                             existingIcon.remove();
                         }
-                        // Agrega la nueva imagen al principio del contenedor
                         const img = document.createElement('img');
                         img.src = src;
                         img.className = 'profile-pic-header';
@@ -566,7 +633,7 @@
 
                 function checkForNewNotifications() {
                     if (db.notifications.length === 0) return;
-                    const latestTimestamp = db.notifications[0].timestamp; // La lista ya está ordenada
+                    const latestTimestamp = db.notifications[0].timestamp;
                     const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp') || 0;
                     
                     if (latestTimestamp > lastSeenTimestamp) {
@@ -589,7 +656,7 @@
                 if (document.getElementById("notifications-btn")) {
                     document.getElementById("notifications-btn").addEventListener("click", () => {
                         setActiveView("notifications-view");
-                        updateLastSeenNotification(); // Marcar notificaciones como vistas
+                        updateLastSeenNotification();
                     });
                 }
                 
@@ -687,9 +754,26 @@
                     });
                 }
                 
+                // --- INICIO: Lógica del Menú Inferior ---
+                bottomNavItems.forEach(item => {
+                    // Los enlaces externos como IPTV y Telegram se manejan con `target="_blank"` en el HTML.
+                    // Solo añadimos listeners para la navegación interna.
+                    if (item.dataset.view) {
+                        item.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            const viewId = item.dataset.view;
+                            setActiveView(viewId);
+                            if (viewId === 'my-list-view') {
+                                populateMyListView();
+                            }
+                        });
+                    }
+                });
+                // --- FIN: Lógica del Menú Inferior ---
+
                 loadHomepageContent();
                 loadProfilePicture();
-                checkForNewNotifications(); // Comprobar si hay notificaciones nuevas al cargar
+                checkForNewNotifications();
                 setActiveView('homepage-view');
                 setupPullToRefresh();
             }
