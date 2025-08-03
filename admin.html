@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - MovieMax</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-color: #121212;
+            --sidebar-bg: #1A1A1A;
+            --surface-color: #1A1A1A;
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0A0;
+            --border-color: #2D2D2D;
+            --accent-color: #E50914;      
+            --accent-color-hover: #B00710; 
+            --danger-color: #E50914;
+            --danger-color-hover: #B00710;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .app-layout { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; padding: 1.5rem; transition: transform 0.3s ease; flex-shrink: 0;
+            position: fixed; top: 0; left: 0; height: 100%; z-index: 1000;
+        }
+        .sidebar-header {
+            display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1.5rem; margin-bottom: 1rem;
+        }
+        .sidebar-header h1 { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); }
+        .nav-list { list-style: none; flex-grow: 1; }
+        .nav-item a {
+            display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-radius: 8px;
+            text-decoration: none; color: var(--text-secondary); font-weight: 500; transition: background-color 0.2s, color 0.2s;
+        }
+        .nav-item a:hover { background-color: #2a2a2a; color: var(--text-primary); }
+        .nav-item a.active { background-color: var(--accent-color); color: #FFFFFF; font-weight: 600; }
+        .sidebar-footer { margin-top: 1rem; }
+
+        .main-container { flex-grow: 1; padding: 2rem; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; min-width: 0; }
+        
+        .main-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 2.5rem; 
+            flex-shrink: 0; 
+            gap: 1rem;
+        }
+        .header-start {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+        }
+        #main-title { 
+            font-size: 2.25rem; 
+            font-weight: 700; 
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .header-actions { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+        #mobile-menu-trigger { display: none; background: none; border: none; cursor: pointer; color: var(--text-primary); }
+        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; }
+        
+        .btn {
+            background-color: var(--accent-color); color: #fff; border: none; padding: 12px 20px;
+            border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s ease;
+        }
+        .btn:hover { background-color: var(--accent-color-hover); transform: translateY(-1px); }
+        .btn.secondary { background-color: #333; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn.secondary:hover { background-color: #444; }
+        .btn:disabled { background-color: var(--text-secondary); cursor: not-allowed; transform: none; opacity: 0.5; }
+        .btn.icon-only {
+            padding: 10px;
+            width: 44px;
+            height: 44px;
+        }
+        .btn.icon-only .material-symbols-outlined {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .panel-card {
+            background-color: var(--surface-color); padding: 2rem; border-radius: var(--radius);
+            box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--border-color);
+        }
+        
+        .main-view { display: none; flex-grow: 1; flex-direction: column; }
+        .main-view.active { display: flex; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .stat-card-body { font-size: 2.25rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem; }
+        
+        .list-wrapper { display: flex; flex-direction: column; flex-grow: 1; min-width:0; }
+        .list-wrapper .panel-card { display: flex; flex-direction: column; flex-grow: 1; }
+        .list-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        
+        .search-bar input, .form-group input, .form-group textarea, .form-group select, .server-item input, .episode-item-full input {
+            width: 100%; padding: 12px 15px; background-color: var(--bg-color);
+            border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);
+            font-size: 1rem; font-family: 'Manrope', sans-serif; transition: all 0.2s;
+        }
+        .form-group input[type="color"] { padding: 5px; height: 48px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus, .server-item input:focus, .episode-item-full input:focus {
+            outline: none; border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 25%, transparent);
+        }
+        .form-group .checkbox-label { display: flex; align-items: center; gap: 0.75rem; background-color: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); cursor:pointer; }
+        .form-group input[type="checkbox"] { width: 1.25rem; height: 1.25rem; accent-color: var(--accent-color); }
+        
+        .item-list { list-style: none; overflow-y: auto; flex-grow: 1; padding-right: 0.5rem; }
+        .content-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s; }
+        .content-item:last-child { border-bottom: none; }
+        .content-item:hover { background-color: #2a2a2a; }
+        .content-item .item-icon { flex-shrink: 0; width: 40px; text-align: center; }
+        .content-item .item-icon .material-symbols-outlined { font-size: 28px; color: var(--text-secondary); }
+        .content-item img { width: 40px; height: 60px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background-color:var(--bg-color); }
+        .content-item img.channel-img { width: 80px; height: 45px; object-fit: contain; } 
+
+        .item-info { flex-grow: 1; min-width: 0; display: flex; align-items: center; }
+        .item-info .text-content { flex-grow: 1; min-width: 0; }
+        .item-info span { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-info p { color: var(--text-secondary); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-actions { display: flex; gap: 0.5rem; }
+        .item-actions button { background: transparent; border: 0; cursor: pointer; color: var(--text-secondary); padding: 4px; border-radius: 50%; display:flex; align-items:center; justify-content:center; }
+        .item-actions button:hover { color: var(--text-primary); background-color: var(--border-color); }
+        
+        .form-wrapper { min-width: 0; }
+        .form-wrapper h3 { font-size: 1.5rem; margin-bottom: 2rem; word-break: break-word; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem; }
+        .form-actions { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+        
+        #tmdb-results { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; max-height: 400px; overflow-y: auto; padding: 5px; }
+        .tmdb-result { cursor: pointer; border-radius: 8px; overflow: hidden; transition: all 0.2s; border: 1px solid var(--border-color); }
+        .tmdb-result:hover { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--accent-color); }
+        .tmdb-result img { width: 100%; display: block; aspect-ratio: 2/3; object-fit: cover; }
+        .tmdb-result .info { padding: 0.5rem; text-align: center; }
+        .tmdb-result strong { font-size: 0.875rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .form-section-divider { border: 0; height: 1px; background-color: var(--border-color); margin: 2rem 0; }
+        .language-server-block { border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .language-server-block h5 { font-size: 1.1rem; margin-bottom: 1rem; }
+        .servers-list { display: flex; flex-direction: column; gap: 1rem; margin-bottom:1rem; }
+        .server-item { display: flex; gap: 0.75rem; align-items: center; }
+        .server-item .inputs { display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1; min-width: 0; }
+        .btn-delete-server { background-color: var(--danger-color); color:#fff; border:0; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.5rem; line-height:32px; text-align:center;flex-shrink:0;}
+        
+        .season-block { border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
+        .season-block h4 { margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .btn-delete-season { background:none; border:none; cursor:pointer; color: var(--danger-color); font-size: 1.5rem; padding:0; line-height: 1; }
+        .episodes-container { display: flex; flex-direction: column; gap: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: 1rem; }
+        .episode-item-full { display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+        .episode-item-full .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; flex-grow: 1; min-width: 0; }
+        .episode-item-full .inputs .form-group { margin-bottom: 0; }
+        .episode-item-full .inputs .full-width { grid-column: 1 / -1; }
+        .delete-episode-btn { background: var(--danger-color); color: #fff; border:0; border-radius: 8px; cursor: pointer; padding: 8px; display:flex; align-items:center; justify-content:center; margin-top: 24px; }
+        
+        .tmdb-type-selector { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+        .tmdb-type-selector label { display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .tmdb-type-selector input { display: none; }
+        .tmdb-type-selector input:checked + label { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+
+        .selector-item .checkbox-container { display:flex; align-items:center; }
+        .selector-item input[type="checkbox"] { width:20px; height:20px; cursor:pointer; accent-color: var(--accent-color); }
+        
+        #status-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2D3748; color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 1001; opacity: 0; transition: all .3s; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        #status-bar.show { opacity: 1; transform:translateX(-50%) translateY(0) }
+        #status-bar.error { background-color: var(--danger-color); }
+        
+        .btn-back-mobile { display: none; }
+        
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.is-open { transform: translateX(0); }
+            .mobile-overlay.is-visible { display: block; }
+            .main-container { margin-left: 0; }
+            #mobile-menu-trigger { display: block; }
+            #main-title { font-size: 1.75rem; }
+            .episode-item-full .inputs { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 1rem; }
+            .panel-card { padding: 1.5rem; }
+            .main-header { margin-bottom: 1.5rem; }
+            #main-title { font-size: 1.5rem; }
+            .btn-back-mobile { display: inline-flex; margin-bottom: 1rem; }
+
+            .main-view .list-wrapper.hidden { display: none; }
+            .main-view .form-wrapper { display: none; }
+            .main-view.is-editing .form-wrapper { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="material-symbols-outlined" style="color: var(--accent-color); font-size: 32px;">movie_filter</span>
+                <h1>MovieMax</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="#" class="main-nav-btn active" data-view="dashboard"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="content"><span class="material-symbols-outlined">video_library</span><span>Contenido</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="channels"><span class="material-symbols-outlined">live_tv</span><span>Canales</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="events"><span class="material-symbols-outlined">celebration</span><span>Eventos</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="notifications"><span class="material-symbols-outlined">notifications</span><span>Notificaciones</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="slider"><span class="material-symbols-outlined">view_carousel</span><span>Slider</span></a></li>
+                    <li class="nav-item"><a href="#" class="main-nav-btn" data-view="trending"><span class="material-symbols-outlined">trending_up</span><span>Tendencias</span></a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn" id="add-content-sidebar-btn" style="width: 100%;">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Agregar Contenido</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-container">
+            <header class="main-header">
+                <div class="header-start">
+                    <button id="mobile-menu-trigger">
+                        <span class="material-symbols-outlined" style="font-size: 28px;">menu</span>
+                    </button>
+                    <h2 id="main-title">Dashboard</h2>
+                </div>
+                <div class="header-actions">
+                     <button id="save-changes-btn" class="btn icon-only" title="Guardar Cambios en el Servidor">
+                        <span class="material-symbols-outlined">save</span>
+                    </button>
+                </div>
+            </header>
+
+            <div id="dashboard-view" class="main-view active">
+                <div class="dashboard-grid">
+                    <div class="panel-card"><h3 class="text-secondary font-medium">Películas Totales</h3><div id="total-movies-stat" class="stat-card-body">0</div></div>
+                    <div class="panel-card"><h3 class="text-secondary font-medium">Series Totales</h3><div id="total-series-stat" class="stat-card-body">0</div></div>
+                    <div class="panel-card"><h3 class="text-secondary font-medium">Canales Totales</h3><div id="total-channels-stat" class="stat-card-body">0</div></div>
+                    <div class="panel-card"><h3 class="text-secondary font-medium">Eventos Totales</h3><div id="total-events-stat" class="stat-card-body">0</div></div>
+                </div>
+            </div>
+            
+            <div id="content-view" class="main-view">
+                <div class="list-wrapper">
+                    <div class="panel-card">
+                        <div class="list-header">
+                            <h3>Gestión de Contenido</h3>
+                            <div class="tab-controls" style="display: flex; gap: 0.5rem;">
+                                <button class="btn secondary tab-btn active" data-type="movie">Películas</button>
+                                <button class="btn secondary tab-btn" data-type="series">Series</button>
+                            </div>
+                        </div>
+                        <div class="search-bar" style="margin-bottom: 1.5rem;"><input type="text" id="content-search-input" placeholder="Buscar en contenido actual..."></div>
+                        <ul id="item-list" class="item-list"></ul>
+                    </div>
+                </div>
+                <div class="form-wrapper" id="form-container"></div>
+            </div>
+            
+            <div id="channels-view" class="main-view">
+                 <div class="list-wrapper">
+                     <div class="panel-card">
+                        <div class="list-header">
+                            <h3>Gestión de Canales</h3>
+                            <button id="add-channel-btn" class="btn">Nuevo Canal</button>
+                        </div>
+                        <ul id="channel-list" class="item-list"></ul>
+                    </div>
+                </div>
+                <div class="form-wrapper" id="channel-form-container"></div>
+            </div>
+
+            <div id="events-view" class="main-view">
+                 <div class="list-wrapper">
+                     <div class="panel-card">
+                        <div class="list-header">
+                            <h3>Gestión de Eventos & Directos</h3>
+                            <button id="add-event-btn" class="btn">Nuevo Evento</button>
+                        </div>
+                        <ul id="event-list" class="item-list"></ul>
+                    </div>
+                </div>
+                <div class="form-wrapper" id="event-form-container"></div>
+            </div>
+
+            <div id="notifications-view" class="main-view">
+                <div class="list-wrapper">
+                     <div class="panel-card">
+                        <div class="list-header">
+                            <h3>Notificaciones Enviadas</h3>
+                            <button id="add-notification-btn" class="btn">Nueva Notificación</button>
+                        </div>
+                        <ul id="notification-list" class="item-list"></ul>
+                    </div>
+                </div>
+                <div class="form-wrapper" id="notification-form-container"></div>
+            </div>
+
+             <div id="slider-view" class="main-view">
+                <div class="list-wrapper">
+                    <div class="panel-card">
+                        <div class="list-header"><h3>Configurar Slider de Inicio</h3></div>
+                        <p style="margin-top:-1rem; margin-bottom:1.5rem; color:var(--text-secondary);">Marca el contenido que aparecerá en el carrusel principal de la app.</p>
+                        <ul id="slider-item-list" class="item-list"></ul>
+                    </div>
+                </div>
+             </div>
+            
+             <div id="trending-view" class="main-view">
+                <div class="list-wrapper">
+                    <div class="panel-card">
+                        <div class="list-header"><h3>Configurar Tendencias</h3></div>
+                        <p style="margin-top:-1rem; margin-bottom:1.5rem; color:var(--text-secondary);">Marca el contenido que aparecerá en la sección "Tendencias" de la app.</p>
+                        <ul id="trending-item-list" class="item-list"></ul>
+                    </div>
+                </div>
+             </div>
+
+        </main>
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+    </div>
+    
+    <div id="status-bar"></div>
+
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            const TMDB_API_KEY = "e416234abcb5d260538a8f7ce6ba12e4";
+            const TMDB_IMG_URL_ORIGINAL = "https://image.tmdb.org/t/p/original";
+            
+            const mainViews = document.querySelectorAll('.main-view');
+            const mainNavBtns = document.querySelectorAll('.main-nav-btn');
+            const mainTitleEl = document.getElementById('main-title');
+            
+            const contentViewEl = document.getElementById('content-view');
+            const itemListEl = document.getElementById('item-list');
+            const formContainerEl = document.getElementById('form-container');
+            const contentSearchInput = document.getElementById('content-search-input');
+            const tabControls = document.querySelector('.tab-controls');
+
+            const channelsViewEl = document.getElementById('channels-view');
+            const channelListEl = document.getElementById('channel-list');
+            const channelFormContainerEl = document.getElementById('channel-form-container');
+
+            const eventsViewEl = document.getElementById('events-view');
+            const eventListEl = document.getElementById('event-list');
+            const eventFormContainerEl = document.getElementById('event-form-container');
+
+            const notificationsViewEl = document.getElementById('notifications-view');
+            const notificationListEl = document.getElementById('notification-list');
+            const notificationFormContainerEl = document.getElementById('notification-form-container');
+            
+            const sliderItemListEl = document.getElementById('slider-item-list');
+            const trendingItemListEl = document.getElementById('trending-item-list');
+            
+            const statusBarEl = document.getElementById('status-bar');
+
+            const categories = ['Acción', 'Aventura', 'Animación', 'Comedia', 'Crimen', 'Documental', 'Drama', 'Fantasía', 'Historia', 'Terror', 'Misterio', 'Romance', 'Ciencia Ficción', 'Suspenso', 'Bélica'];
+            const channelCategories = ['Entretenimiento', 'Deportes', 'Películas', 'Infantil', 'Series', 'Música', 'Noticias', 'Documentales'];
+            const eventCategories = ['Deportes en Vivo', 'Conciertos', 'Noticias de Última Hora', 'Especiales', 'Gaming'];
+
+            let db = { 
+                content: [], 
+                notifications: [], 
+                sliderItems: [], 
+                trendingItems: [],
+                channels: [], 
+                events: []
+            };
+            let currentListType = 'movie';
+            let tmdbSearchTimeout; 
+
+            const showStatus = (message, isError = false, duration = 3000) => {
+                statusBarEl.textContent = message;
+                statusBarEl.classList.toggle('error', isError);
+                statusBarEl.classList.add('show');
+                setTimeout(() => statusBarEl.classList.remove('show'), duration);
+            };
+
+            const showForm = (viewElement) => {
+                viewElement.classList.add('is-editing');
+                if (window.innerWidth <= 768) {
+                     const listWrapper = viewElement.querySelector('.list-wrapper');
+                     if (listWrapper) listWrapper.style.display = 'none';
+                }
+            };
+
+            const hideForm = (viewElement) => {
+                viewElement.classList.remove('is-editing');
+                if (window.innerWidth <= 768) {
+                    const listWrapper = viewElement.querySelector('.list-wrapper');
+                    if (listWrapper) listWrapper.style.display = 'block';
+                }
+                const formWrapper = viewElement.querySelector('.form-wrapper');
+                if (formWrapper) formWrapper.innerHTML = '';
+            };
+            
+            const hideAllForms = () => {
+                hideForm(contentViewEl);
+                hideForm(notificationsViewEl);
+                hideForm(channelsViewEl);
+                hideForm(eventsViewEl);
+            };
+            
+            const fetchJson = async (url, defaultValue) => {
+                try {
+                    // Añadir un timestamp para evitar la caché del navegador al cargar
+                    const response = await fetch(`${url}?v=${Date.now()}`);
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            console.log(`Archivo no encontrado, se usará el valor por defecto: ${url}`);
+                            return defaultValue;
+                        }
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error(`Error al cargar ${url}:`, error);
+                    showStatus(`Fallo al cargar ${url}. Se usará un valor por defecto.`, true);
+                    return defaultValue;
+                }
+            };
+
+            const init = async () => {
+                showStatus('Cargando datos desde el servidor...');
+                
+                const [content, notifications, sliderItems, channels, events, trending] = await Promise.all([
+                    fetchJson('data/content.json', []),
+                    fetchJson('data/notifications.json', []),
+                    fetchJson('data/slider_items.json', []),
+                    fetchJson('data/channels.json', []),
+                    fetchJson('data/events.json', []),
+                    fetchJson('data/trending_items.json', [])
+                ]);
+
+                db.content = content;
+                db.notifications = notifications;
+                db.sliderItems = sliderItems;
+                db.channels = channels;
+                db.events = events;
+                db.trendingItems = trending;
+                
+                showStatus('Datos cargados correctamente.');
+                renderAll();
+            };
+
+            const renderAll = () => {
+                updateHeaderStats();
+                renderContentList();
+                renderNotificationList();
+                renderSliderList();
+                renderTrendingList();
+                renderChannelsList();
+                renderEventsList();
+            };
+            
+            const updateHeaderStats = () => {
+                document.getElementById('total-movies-stat').textContent = db.content.filter(item => item && item.type === 'movie').length;
+                document.getElementById('total-series-stat').textContent = db.content.filter(item => item && item.type === 'series').length;
+                document.getElementById('total-channels-stat').textContent = db.channels.length;
+                document.getElementById('total-events-stat').textContent = db.events.length;
+            };
+
+            const saveChanges = async () => {
+                const saveButton = document.getElementById('save-changes-btn');
+                saveButton.disabled = true;
+                showStatus('Guardando datos en el servidor...', false, 10000);
+
+                db.sliderItems = [...sliderItemListEl.querySelectorAll('input[type="checkbox"]:checked')].map(input => input.dataset.id);
+                db.trendingItems = [...trendingItemListEl.querySelectorAll('input[type="checkbox"]:checked')].map(input => input.dataset.id);
+
+                const dataToSave = {
+                    'content.json': db.content,
+                    'notifications.json': db.notifications,
+                    'slider_items.json': db.sliderItems,
+                    'trending_items.json': db.trendingItems,
+                    'channels.json': db.channels,
+                    'events.json': db.events
+                };
+
+                try {
+                    const response = await fetch('save_data.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataToSave)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error del servidor: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showStatus(result.message, false, 5000);
+                    } else {
+                        throw new Error(result.message || 'Error desconocido al guardar los datos.');
+                    }
+                } catch (error) {
+                    console.error('Error al guardar:', error);
+                    showStatus(`Error de conexión al guardar: ${error.message}`, true, 8000);
+                } finally {
+                    saveButton.disabled = false;
+                }
+            };
+            
+            // --- GESTIÓN DE EVENTOS & DIRECTOS ---
+            const renderEventsList = () => {
+                const sortedEvents = [...db.events].sort((a, b) => a.title.localeCompare(b.title));
+                eventListEl.innerHTML = sortedEvents.map(event => `
+                    <li class="content-item" data-id="${event.id}">
+                        <img src="${event.image || 'https://via.placeholder.com/80x45'}" alt="Evento" class="channel-img" style="background-color: ${event.backgroundColor || 'var(--surface-color)'}">
+                        <div class="item-info">
+                             <div class="text-content">
+                                <span>${event.title}</span>
+                                <p>${event.category || 'Sin categoría'} • ${event.status || ''}</p>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="edit-event-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+                            <button class="delete-event-btn" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
+                        </div>
+                    </li>`).join('') || `<li class="content-item"><p>No hay eventos para mostrar.</p></li>`;
+            };
+
+            const createEventForm = (data = {}) => {
+                showForm(eventsViewEl);
+                const isEditing = !!data.id;
+                const title = isEditing ? `Editando: ${data.title}` : 'Añadir Nuevo Evento';
+                const categoryOptions = eventCategories.map(cat => `<option value="${cat}" ${data.category === cat ? 'selected' : ''}>${cat}</option>`).join('');
+                eventFormContainerEl.innerHTML = `<div class="panel-card">
+                    <form id="event-form" novalidate>
+                        <button type="button" class="btn secondary btn-back-mobile" id="back-event-btn"><span class="material-symbols-outlined">arrow_back</span> Volver</button>
+                        <h3>${title}</h3>
+                        <input type="hidden" id="event-form-id" value="${data.id || ''}">
+                        <div class="form-group"><label for="event-title">Título del Evento</label><input type="text" id="event-title" required value="${data.title || ''}"></div>
+                        <div class="form-group"><label for="event-description">Descripción</label><input type="text" id="event-description" value="${data.description || ''}"></div>
+                        <div class="form-group"><label for="event-image">URL de la Imagen</label><input type="text" id="event-image" value="${data.image || ''}"></div>
+                        <div class="form-group"><label for="event-url">URL del Directo</label><input type="text" id="event-url" placeholder="https://..." value="${data.url || ''}"></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group"><label for="event-category">Categoría</label><select id="event-category">${categoryOptions}</select></div>
+                            <div class="form-group"><label for="event-backgroundColor">Color de Fondo</label><input type="color" id="event-backgroundColor" value="${data.backgroundColor || '#1f1f1f'}"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group"><label for="event-status">Estado</label><select id="event-status"><option value="LIVE" ${data.status === 'LIVE' ? 'selected' : ''}>En Vivo</option><option value="Upcoming" ${data.status === 'Upcoming' ? 'selected' : ''}>Próximo</option></select></div>
+                            <div class="form-group"><label for="event-statusLine">Línea de Estado</label><input type="text" id="event-statusLine" value="${data.statusLine || ''}" placeholder="Ej: Ahora, 8:00 PM..."></div>
+                        </div>
+                        <div class="form-actions"><button type="submit" class="btn">Guardar Evento</button><button type="button" class="btn secondary" id="cancel-event-btn">Cancelar</button></div>
+                    </form></div>`;
+                document.getElementById('event-form').addEventListener('submit', handleSaveEvent);
+                document.getElementById('cancel-event-btn').addEventListener('click', () => hideForm(eventsViewEl));
+                document.getElementById('back-event-btn').addEventListener('click', () => hideForm(eventsViewEl));
+            };
+
+            const handleSaveEvent = (e) => {
+                e.preventDefault();
+                const id = document.getElementById('event-form-id').value || `event_${Date.now()}`;
+                const eventData = { id, title: document.getElementById('event-title').value, description: document.getElementById('event-description').value, image: document.getElementById('event-image').value, url: document.getElementById('event-url').value, category: document.getElementById('event-category').value, status: document.getElementById('event-status').value, statusLine: document.getElementById('event-statusLine').value, backgroundColor: document.getElementById('event-backgroundColor').value };
+                const existingIndex = db.events.findIndex(item => item && item.id === id);
+                if (existingIndex > -1) { db.events[existingIndex] = eventData; } else { db.events.push(eventData); }
+                showStatus(`Evento "${eventData.title}" guardado localmente.`);
+                renderAll();
+                hideForm(eventsViewEl);
+            };
+
+            const handleDeleteEvent = (eventId) => {
+                const event = db.events.find(evt => evt.id === eventId);
+                if (event && confirm(`¿Seguro que quieres eliminar el evento "${event.title}"?`)) {
+                    db.events = db.events.filter(evt => evt.id !== eventId);
+                    renderAll();
+                    showStatus(`Evento "${event.title}" eliminado.`);
+                    hideForm(eventsViewEl);
+                }
+            };
+
+            // --- GESTIÓN DE CANALES (SIMPLIFICADA) ---
+            const renderChannelsList = () => {
+                const sortedChannels = [...db.channels].sort((a, b) => a.title.localeCompare(b.title));
+                channelListEl.innerHTML = sortedChannels.map(channel => `<li class="content-item" data-id="${channel.id}">
+                    <img src="${channel.image || 'https://via.placeholder.com/80x45'}" alt="Canal" class="channel-img" style="background-color: ${channel.backgroundColor || 'var(--surface-color)'}">
+                    <div class="item-info">
+                        <div class="text-content">
+                            <span>${channel.title}</span>
+                            <p>${channel.category || 'Sin categoría'}</p>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="edit-channel-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+                        <button class="delete-channel-btn" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
+                    </div></li>`).join('') || `<li class="content-item"><p>No hay canales para mostrar.</p></li>`;
+            };
+
+            const createChannelForm = (data = {}) => {
+                showForm(channelsViewEl);
+                const isEditing = !!data.id;
+                const title = isEditing ? `Editando: ${data.title}` : 'Añadir Nuevo Canal';
+                const categoryOptions = channelCategories.map(cat => `<option value="${cat}" ${data.category === cat ? 'selected' : ''}>${cat}</option>`).join('');
+                channelFormContainerEl.innerHTML = `<div class="panel-card">
+                    <form id="channel-form" novalidate>
+                        <button type="button" class="btn secondary btn-back-mobile" id="back-channel-btn"><span class="material-symbols-outlined">arrow_back</span> Volver</button>
+                        <h3>${title}</h3>
+                        <input type="hidden" id="channel-form-id" value="${data.id || ''}">
+                        <div class="form-group"><label for="channel-title">Título del Canal</label><input type="text" id="channel-title" required value="${data.title || ''}"></div>
+                        <div class="form-group"><label for="channel-description">Descripción</label><input type="text" id="channel-description" value="${data.description || ''}"></div>
+                        <div class="form-group"><label for="channel-image">URL de la Imagen</label><input type="text" id="channel-image" value="${data.image || ''}"></div>
+                        <div class="form-group"><label for="channel-url">URL del Canal</label><input type="text" id="channel-url" placeholder="https://..." value="${data.url || ''}"></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group"><label for="channel-category">Categoría</label><select id="channel-category">${categoryOptions}</select></div>
+                            <div class="form-group"><label for="channel-backgroundColor">Color de Fondo</label><input type="color" id="channel-backgroundColor" value="${data.backgroundColor || '#1f1f1f'}"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group"><label for="channel-status">Estado</label><select id="channel-status"><option value="LIVE" ${data.status === 'LIVE' ? 'selected' : ''}>En Vivo</option><option value="Upcoming" ${data.status === 'Upcoming' ? 'selected' : ''}>Próximo</option><option value="" ${!data.status ? 'selected' : ''}>Ninguno</option></select></div>
+                            <div class="form-group"><label for="channel-statusLine">Línea de Estado</label><input type="text" id="channel-statusLine" value="${data.statusLine || ''}" placeholder="Ej: Ahora, 8:00 PM..."></div>
+                        </div>
+                        <div class="form-actions"><button type="submit" class="btn">Guardar Canal</button><button type="button" class="btn secondary" id="cancel-channel-btn">Cancelar</button></div>
+                    </form></div>`;
+                document.getElementById('channel-form').addEventListener('submit', handleSaveChannel);
+                document.getElementById('cancel-channel-btn').addEventListener('click', () => hideForm(channelsViewEl));
+                document.getElementById('back-channel-btn').addEventListener('click', () => hideForm(channelsViewEl));
+            };
+
+            const handleSaveChannel = (e) => {
+                e.preventDefault();
+                const id = document.getElementById('channel-form-id').value || `channel_${Date.now()}`;
+                const channelData = { 
+                    id, 
+                    title: document.getElementById('channel-title').value, 
+                    description: document.getElementById('channel-description').value, 
+                    image: document.getElementById('channel-image').value, 
+                    url: document.getElementById('channel-url').value, 
+                    category: document.getElementById('channel-category').value, 
+                    status: document.getElementById('channel-status').value, 
+                    statusLine: document.getElementById('channel-statusLine').value, 
+                    backgroundColor: document.getElementById('channel-backgroundColor').value
+                };
+                const existingIndex = db.channels.findIndex(item => item && item.id === id);
+                if (existingIndex > -1) { db.channels[existingIndex] = channelData; } else { db.channels.push(channelData); }
+                showStatus(`Canal "${channelData.title}" guardado localmente.`);
+                renderAll();
+                hideForm(channelsViewEl);
+            };
+
+            const handleDeleteChannel = (channelId) => {
+                const channel = db.channels.find(c => c.id === channelId);
+                if (channel && confirm(`¿Seguro que quieres eliminar el canal "${channel.title}"?`)) {
+                    db.channels = db.channels.filter(c => c.id !== channelId);
+                    renderAll();
+                    showStatus(`Canal "${channel.title}" eliminado.`);
+                    hideForm(channelsViewEl);
+                }
+            };
+            
+            // --- GESTIÓN DE CONTENIDO (Películas y Series) ---
+            const renderContentList = () => {
+                const searchQuery = contentSearchInput.value.toLowerCase().trim();
+                let filteredContent = db.content.filter(item => item && item.type === currentListType);
+                if (searchQuery) { filteredContent = filteredContent.filter(item => item.title.toLowerCase().includes(searchQuery)); }
+                filteredContent.sort((a, b) => a.title.localeCompare(b.title));
+                itemListEl.innerHTML = filteredContent.map(item => `<li class="content-item" data-id="${item.id}"><img src="${item.poster_path || 'https://via.placeholder.com/40x60'}" alt="Poster"><div class="item-info"><div class="text-content"><span>${item.title}</span><p>${item.year} • ${item.category || 'Sin categoría'}</p></div></div><div class="item-actions"><button class="edit-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button><button class="delete-btn" title="Eliminar"><span class="material-symbols-outlined">delete</span></button></div></li>`).join('') || `<li class="content-item"><div class="item-info"><p>No se encontró contenido.</p></div></li>`;
+            };
+            
+            const getMovieFieldsHTML = (data = {}) => {
+                const streamLinks = data.stream_links || {};
+                const languages = ['latino', 'castellano', 'ingles', 'subtitulado'];
+                let html = '<hr class="form-section-divider"><h4>Servidores de Reproducción</h4>';
+                languages.forEach(lang => {
+                    const servers = streamLinks[lang] || [];
+                    const langCapitalized = lang.charAt(0).toUpperCase() + lang.slice(1);
+                    html += `<div class="language-server-block"><h5>${langCapitalized}</h5><div id="${lang}-servers-list" class="servers-list">${servers.map(server => `<div class="server-item"><div class="inputs"><div class="form-group" style="margin:0;"><label>Nombre del Servidor</label><input type="text" placeholder="Ej: Play" value="${server.name || ''}"></div><div class="form-group" style="margin:0;"><label>URL del Servidor</label><input type="text" placeholder="https://..." value="${server.url || ''}"></div></div><button type="button" class="btn-delete-server" title="Eliminar servidor">×</button></div>`).join('')}</div><button type="button" class="btn secondary btn-add-server" data-lang="${lang}"><span class="material-symbols-outlined">add</span> Añadir Servidor</button></div>`;
+                });
+                return html;
+            };
+
+            const getSeriesFieldsHTML = (data = {}) => {
+                const seasonsHTML = (data.seasons || []).map(getSeasonHTML).join('');
+                return `<hr class="form-section-divider"><h4>Temporadas y Episodios</h4><div id="seasons-container">${seasonsHTML}</div><button type="button" class="btn secondary" id="add-season-btn" style="margin-top: 1rem;"><span class="material-symbols-outlined">add</span> Añadir Temporada</button>`;
+            };
+
+            const getSeasonHTML = season => {
+                const episodesHTML = (season.episodes || []).map(getEpisodeHTML).join('');
+                return `<div class="season-block" data-season-number="${season.season_number}"><h4><span>Temporada ${season.season_number}</span><button type="button" class="btn-delete-season" title="Eliminar Temporada">×</button></h4><div class="episodes-container">${episodesHTML}</div><button type="button" class="btn secondary btn-add-episode" style="margin-top: 1rem;"><span class="material-symbols-outlined">add</span> Añadir Episodio a Temporada ${season.season_number}</button></div>`;
+            };
+
+            const getEpisodeHTML = ep => {
+                return `<div class="episode-item-full"><div class="inputs"><div class="form-group"><label>Nº Episodio</label><input type="number" placeholder="Nº" value="${ep.episode_number || ''}"></div><div class="form-group"><label>Título</label><input type="text" placeholder="Título" value="${ep.title || ''}"></div><div class="form-group"><label>Fecha</label><input type="text" placeholder="YYYY-MM-DD" value="${ep.date || ''}"></div><div class="form-group"><label>Miniatura URL</label><input type="text" placeholder="https://..." value="${ep.thumbnail || ''}"></div><div class="form-group full-width"><label>Stream URL</label><input type="text" placeholder="https://..." value="${ep.streamUrl || ''}"></div></div><button type="button" class="delete-episode-btn" title="Eliminar episodio"><span class="material-symbols-outlined">delete</span></button></div>`;
+            };
+
+            const createContentForm = (data = {}) => {
+                showForm(contentViewEl);
+                const isEditing = !!data.id;
+                const title = isEditing ? `Editando: ${data.title}` : 'Añadir Nuevo Contenido';
+                const categoryOptions = categories.map(cat => `<option value="${cat}" ${data.category === cat ? 'selected' : ''}>${cat}</option>`).join('');
+                formContainerEl.innerHTML = `<div class="panel-card"><form id="content-form" novalidate><button type="button" class="btn secondary btn-back-mobile" id="back-content-btn"><span class="material-symbols-outlined">arrow_back</span> Volver</button><h3>${title}</h3><input type="hidden" id="form-id" value="${data.id || ''}"><input type="hidden" id="form-type" value="${data.type || currentListType}">${!isEditing ? `<div class="form-group"><label>1. Buscar en TMDB</label><div class="tmdb-type-selector"><input type="radio" id="tmdb-type-movie" name="tmdb-type" value="movie" checked><label for="tmdb-type-movie"><span class="material-symbols-outlined">movie</span>Película</label><input type="radio" id="tmdb-type-series" name="tmdb-type" value="tv"><label for="tmdb-type-series"><span class="material-symbols-outlined">tv</span>Serie</label></div><input type="text" id="tmdb-search-input" placeholder="Escribe para buscar..." style="margin-top: 1rem;"><div id="tmdb-results"></div></div><hr class="form-section-divider">` : ''}<h4>Datos Principales</h4><div class="form-group"><label for="title">Título</label><input type="text" id="title" required value="${data.title || ''}"></div><div class="form-group"><label for="synopsis">Sinopsis</label><textarea id="synopsis" required rows="4">${data.synopsis || ''}</textarea></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem"><div class="form-group"><label for="year">Año</label><input type="number" id="year" required value="${data.year || ''}"></div><div class="form-group"><label for="category">Categoría</label><select id="category">${categoryOptions}</select></div><div class="form-group"><label for="rating">Puntuación</label><input type="text" id="rating" value="${data.rating || ''}"></div></div><hr class="form-section-divider"><h4>Recursos y Enlaces</h4><div class="form-group"><label for="poster_path">URL Póster</label><input type="text" id="poster_path" value="${data.poster_path || ''}"></div><div class="form-group"><label for="backdrop_path">URL Banner</label><input type="text" id="backdrop_path" value="${data.backdrop_path || ''}"></div><div class="form-group"><label for="trailer_id">ID Tráiler YouTube</label><input type="text" id="trailer_id" value="${data.trailer_id || ''}"></div><div class="form-group"><label for="credits">Créditos</label><input type="text" id="credits" value="${data.credits || ''}"></div><div class="form-group"><label for="tag">Etiqueta (Opcional)</label><input type="text" id="tag" value="${data.tag || ''}" placeholder="Ej: ESTRENO, HD, 4K"></div><div id="dynamic-fields"></div><div class="form-actions"><button type="submit" class="btn">Guardar Contenido</button><button type="button" class="btn secondary" id="cancel-content-btn">Cancelar</button></div></form></div>`;
+                const itemType = document.getElementById('form-type').value;
+                document.getElementById('dynamic-fields').innerHTML = itemType === 'movie' ? getMovieFieldsHTML(data) : getSeriesFieldsHTML(data);
+                const formEl = document.getElementById('content-form');
+                formEl.addEventListener('submit', handleSaveContent);
+                formEl.querySelector('#cancel-content-btn').addEventListener('click', () => hideForm(contentViewEl));
+                formEl.querySelector('#back-content-btn').addEventListener('click', () => hideForm(contentViewEl));
+                if (!isEditing) {
+                    const tmdbInput = document.getElementById('tmdb-search-input');
+                    const tmdbTypeRadios = document.querySelectorAll('input[name="tmdb-type"]');
+                    const searchHandler = () => { clearTimeout(tmdbSearchTimeout); const selectedType = document.querySelector('input[name="tmdb-type"]:checked').value; tmdbSearchTimeout = setTimeout(() => handleTMDBSearch(selectedType), 500); };
+                    tmdbInput.addEventListener('input', searchHandler);
+                    tmdbTypeRadios.forEach(radio => radio.addEventListener('change', () => { const newType = radio.value === 'tv' ? 'series' : 'movie'; document.getElementById('form-type').value = newType; document.getElementById('dynamic-fields').innerHTML = newType === 'movie' ? getMovieFieldsHTML({}) : getSeriesFieldsHTML({}); searchHandler(); }));
+                }
+                formEl.addEventListener('click', e => {
+                    if (e.target.closest('.btn-add-server')) { const lang = e.target.closest('.btn-add-server').dataset.lang; const serverList = document.getElementById(`${lang}-servers-list`); const newServerItem = document.createElement('div'); newServerItem.className = 'server-item'; newServerItem.innerHTML = `<div class="inputs"><div class="form-group" style="margin:0;"><label>Nombre del Servidor</label><input type="text" placeholder="Ej: Play"></div><div class="form-group" style="margin:0;"><label>URL del Servidor</label><input type="text" placeholder="https://..."></div></div><button type="button" class="btn-delete-server" title="Eliminar servidor">×</button>`; serverList.appendChild(newServerItem); }
+                    if (e.target.closest('.btn-delete-server')) e.target.closest('.server-item').remove();
+                    if (e.target.closest('.delete-episode-btn')) e.target.closest('.episode-item-full').remove();
+                    if (e.target.closest('.btn-add-episode')) { const seasonBlock = e.target.closest('.season-block'); const episodesContainer = seasonBlock.querySelector('.episodes-container'); episodesContainer.insertAdjacentHTML('beforeend', getEpisodeHTML({})); }
+                    if (e.target.closest('#add-season-btn')) { const seasonsContainer = document.getElementById('seasons-container'); const existingSeasons = seasonsContainer.querySelectorAll('.season-block'); const lastSeasonNum = existingSeasons.length > 0 ? parseInt(existingSeasons[existingSeasons.length - 1].dataset.seasonNumber) : 0; const newSeason = { season_number: lastSeasonNum + 1, episodes: [] }; seasonsContainer.insertAdjacentHTML('beforeend', getSeasonHTML(newSeason)); }
+                    if (e.target.closest('.btn-delete-season')) { if (confirm('¿Seguro que quieres eliminar esta temporada y todos sus episodios?')) { e.target.closest('.season-block').remove(); } }
+                });
+            };
+            
+            const handleSaveContent = (e) => {
+                e.preventDefault();
+                const id = document.getElementById('form-id').value || `movieplus_${Date.now()}`;
+                const type = document.getElementById('form-type').value;
+                const commonData = { 
+                    id, 
+                    type, 
+                    title: document.getElementById('title').value, 
+                    year: document.getElementById('year').value, 
+                    synopsis: document.getElementById('synopsis').value, 
+                    poster_path: document.getElementById('poster_path').value, 
+                    backdrop_path: document.getElementById('backdrop_path').value, 
+                    trailer_id: document.getElementById('trailer_id').value, 
+                    credits: document.getElementById('credits').value, 
+                    category: document.getElementById('category').value, 
+                    rating: document.getElementById('rating').value,
+                    tag: document.getElementById('tag').value.trim()
+                };
+                let itemData;
+                if (type === 'movie') { itemData = { ...commonData, stream_links: {} }; ['latino', 'castellano', 'ingles', 'subtitulado'].forEach(lang => { const serverItems = document.querySelectorAll(`#${lang}-servers-list .server-item`); if (serverItems.length > 0) { const links = Array.from(serverItems).map(item => { const inputs = item.querySelectorAll('input'); return { name: inputs[0].value, url: inputs[1].value }; }).filter(s => s.name && s.url); if (links.length > 0) itemData.stream_links[lang] = links; } }); } else { itemData = { ...commonData, seasons: [] }; document.querySelectorAll(".season-block").forEach(sBlock => { const season = { season_number: sBlock.dataset.seasonNumber, episodes: [] }; sBlock.querySelectorAll(".episode-item-full").forEach(epItem => { const inputs = epItem.querySelectorAll('input'); const episodeData = { episode_number: inputs[0].value, title: inputs[1].value, date: inputs[2].value, thumbnail: inputs[3].value, streamUrl: inputs[4].value }; if(episodeData.episode_number) season.episodes.push(episodeData); }); itemData.seasons.push(season); }); }
+                const existingIndex = db.content.findIndex(item => item && item.id === id);
+                if (existingIndex > -1) db.content[existingIndex] = itemData; else db.content.push(itemData);
+                showStatus(`"${itemData.title}" guardado localmente.`); renderAll(); hideForm(contentViewEl);
+            };
+
+            const handleDeleteContent = (itemId) => { 
+                const item = db.content.find(e => e.id === itemId); 
+                if(item && confirm(`¿Seguro que quieres eliminar "${item.title}"?`)) { 
+                    db.content = db.content.filter(e => e.id !== itemId); 
+                    db.sliderItems = db.sliderItems.filter(e => e !== itemId); 
+                    db.trendingItems = db.trendingItems.filter(e => e !== itemId); 
+                    renderAll(); 
+                    showStatus(`"${item.title}" eliminado.`); 
+                    hideForm(contentViewEl); 
+                }
+            };
+            
+            const handleTMDBSearch = async (type) => {
+                const searchInput = document.getElementById("tmdb-search-input");
+                const query = searchInput.value; if (!query) { document.getElementById("tmdb-results").innerHTML = ""; return; }
+                searchInput.disabled = true;
+                const url = `https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=es-MX&include_adult=false`;
+                try { const response = await fetch(url); const data = await response.json(); document.getElementById("tmdb-results").innerHTML = data.results.slice(0, 6).map(result => `<div class="tmdb-result" data-id="${result.id}" data-type="${type}"><img src="${result.poster_path ? TMDB_IMG_URL_ORIGINAL + result.poster_path : "https://via.placeholder.com/200x300.png?text=No+Poster"}" alt="poster"><div class="info"><strong>${result.title || result.name}</strong><p>${(result.release_date || result.first_air_date || "").split("-")[0]}</p></div></div>`).join(""); document.querySelectorAll(".tmdb-result").forEach(el => el.addEventListener("click", () => fillFormWithTMDB(el.dataset.id, el.dataset.type))); } catch (error) { showStatus("Error al buscar en TMDB.", true); } finally { searchInput.disabled = false; }
+            };
+
+            const fillFormWithTMDB = async (id, type) => {
+                showStatus("Obteniendo datos de TMDB...");
+                const detailsUrl = `https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=es-MX&append_to_response=credits,videos`;
+                try { const response = await fetch(detailsUrl); const data = await response.json(); document.getElementById("form-type").value = type === 'tv' ? 'series' : 'movie'; document.getElementById("title").value = data.title || data.name; document.getElementById("year").value = (data.release_date || data.first_air_date || "").split("-")[0]; document.getElementById("synopsis").value = data.overview; document.getElementById("poster_path").value = data.poster_path ? TMDB_IMG_URL_ORIGINAL + data.poster_path : ""; document.getElementById("backdrop_path").value = data.backdrop_path ? TMDB_IMG_URL_ORIGINAL + data.backdrop_path : ""; document.getElementById("rating").value = data.vote_average ? data.vote_average.toFixed(1) : ""; if (data.genres && data.genres.length > 0) { const tmdbGenre = data.genres[0].name; const categorySelect = document.getElementById("category"); const matchedCategory = categories.find(c => tmdbGenre.toLowerCase().includes(c.toLowerCase())); categorySelect.value = matchedCategory || categories[0]; } if(data.credits?.cast) document.getElementById("credits").value = data.credits.cast.slice(0, 5).map(c => c.name).join(", "); if (data.videos?.results.length > 0) { const trailer = data.videos.results.find(v => v.type === "Trailer" && v.site === "YouTube") || data.videos.results[0]; if (trailer) document.getElementById("trailer_id").value = trailer.key; } const dynamicFieldsEl = document.getElementById("dynamic-fields"); if (type === "tv") { showStatus("Datos cargados. Obteniendo temporadas..."); const seasonsWithEpisodes = await Promise.all(data.seasons.filter(s => s.season_number > 0).map(s => fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s.season_number}?api_key=${TMDB_API_KEY}&language=es-MX`).then(res => res.json()))); const seriesData = { seasons: seasonsWithEpisodes.map(seasonDetail => ({ season_number: seasonDetail.season_number, episodes: seasonDetail.episodes.map(ep => ({ episode_number: ep.episode_number, title: ep.name, date: ep.air_date, thumbnail: ep.still_path ? TMDB_IMG_URL_ORIGINAL + ep.still_path : "", streamUrl: "" })) })) }; dynamicFieldsEl.innerHTML = getSeriesFieldsHTML(seriesData); showStatus("¡Episodios cargados! Añade las URLs."); } else { dynamicFieldsEl.innerHTML = getMovieFieldsHTML({}); showStatus("Datos de la película cargados."); } document.getElementById("tmdb-results").innerHTML = ""; } catch (error) { showStatus("Error al obtener datos de TMDB.", true); }
+            };
+            
+            const renderNotificationList = () => {
+                const sortedNotifications = [...db.notifications].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                notificationListEl.innerHTML = sortedNotifications.map(notif => `<li class="content-item" data-id="${notif.id}"><div class="item-info"><div class="text-content"><span>${notif.title}</span><p>${notif.message||""}</p></div></div><div class="item-actions"><button class="edit-notification-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button><button class="delete-notification-btn" title="Eliminar"><span class="material-symbols-outlined">delete</span></button></div></li>`).join("");
+            };
+
+            const createNotificationForm = (data = {}) => {
+                showForm(notificationsViewEl);
+                const isEditing = !!data.id;
+                const title = isEditing ? "Editando Notificación" : "Nueva Notificación";
+                notificationFormContainerEl.innerHTML = `<div class="panel-card"><form id="notification-form"><button type="button" class="btn secondary btn-back-mobile" id="back-notif-btn"><span class="material-symbols-outlined">arrow_back</span> Volver</button><h3>${title}</h3><input type="hidden" id="notif-form-id" value="${data.id||""}"><div class="form-group"><label for="notif-title">Título</label><input type="text" id="notif-title" required value="${data.title||""}"></div><div class="form-group"><label for="notif-message">Mensaje</label><textarea id="notif-message" required>${data.message||""}</textarea></div><div class="form-group"><label for="notif-content-id">ID de Contenido (Opcional)</label><input type="text" id="notif-content-id" value="${data.contentId||""}" placeholder="ID del contenido a abrir"></div><div class="form-actions"><button type="submit" class="btn">Guardar Notificación</button><button type="button" class="btn secondary" id="cancel-notif-btn">Cancelar</button></div></form></div>`;
+                document.getElementById("notification-form").addEventListener("submit", handleSaveNotification);
+                document.getElementById("cancel-notif-btn").addEventListener("click", () => hideForm(notificationsViewEl));
+                document.getElementById("back-notif-btn").addEventListener("click", () => hideForm(notificationsViewEl));
+            };
+
+            const handleSaveNotification = e => {
+                e.preventDefault();
+                let id = document.getElementById("notif-form-id").value || `notif_${Date.now()}`;
+                const notificationData = { id, title: document.getElementById("notif-title").value, message: document.getElementById("notif-message").value, contentId: document.getElementById("notif-content-id").value, timestamp: Date.now() };
+                const existingIndex = db.notifications.findIndex(n => n.id === id);
+                if (existingIndex > -1) { db.notifications[existingIndex] = { ...db.notifications[existingIndex], ...notificationData }; } else { db.notifications.push(notificationData); }
+                showStatus("Notificación guardada."); renderNotificationList(); hideForm(notificationsViewEl);
+            };
+
+            const handleDeleteNotification = (notifId) => {
+                const notif = db.notifications.find(n => n.id === notifId);
+                if(notif && confirm(`¿Seguro que quieres eliminar la notificación "${notif.title}"?`)){
+                    db.notifications = db.notifications.filter(n => n.id !== notifId);
+                    renderNotificationList(); showStatus("Notificación eliminada."); hideForm(notificationsViewEl);
+                }
+            };
+            
+            // --- GESTIÓN DE SLIDER & TENDENCIAS ---
+            const renderSelectorList = (containerEl, selectedItems) => {
+                const sortedContent = [...db.content].sort((a, b) => a.title.localeCompare(b.title));
+                containerEl.innerHTML = sortedContent.map(item => `<li class="content-item selector-item">
+                    <img src="${item.poster_path||"https://via.placeholder.com/40x60"}" alt="Poster">
+                    <div class="item-info">
+                        <div class="text-content">
+                            <span>${item.title}</span>
+                            <p>${item.type === "movie" ? "Película" : "Serie"}</p>
+                        </div>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" data-id="${item.id}" ${selectedItems.includes(item.id) ? "checked" : ""}>
+                    </div>
+                </li>`).join("");
+            };
+
+            const renderSliderList = () => renderSelectorList(sliderItemListEl, db.sliderItems);
+            const renderTrendingList = () => renderSelectorList(trendingItemListEl, db.trendingItems);
+
+
+            // --- EVENT LISTENERS GENERALES ---
+            mainNavBtns.forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const viewId = btn.dataset.view;
+                    mainNavBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    mainViews.forEach(v => v.classList.remove("active"));
+                    const viewEl = document.getElementById(`${viewId}-view`);
+                    if(viewEl) viewEl.classList.add("active");
+                    mainTitleEl.textContent = btn.querySelector('span:last-child').textContent;
+                    hideAllForms();
+                    document.getElementById('sidebar').classList.remove('is-open');
+                    document.getElementById('mobile-overlay').classList.remove('is-visible');
+                });
+            });
+            
+            tabControls.addEventListener('click', e => {
+                const tabBtn = e.target.closest(".tab-btn");
+                if (tabBtn) { currentListType = tabBtn.dataset.type; document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active")); tabBtn.classList.add("active"); contentSearchInput.value = ''; hideForm(contentViewEl); renderContentList(); }
+            });
+
+            contentSearchInput.addEventListener('input', renderContentList);
+            
+            itemListEl.addEventListener('click', e => {
+                const itemEl = e.target.closest(".content-item"); if (!itemEl) return; const itemId = itemEl.dataset.id; const itemData = db.content.find(i => i.id === itemId); if (e.target.closest(".edit-btn")) createContentForm(itemData); if (e.target.closest(".delete-btn")) handleDeleteContent(itemId);
+            });
+            
+            channelListEl.addEventListener('click', e => {
+                const itemEl = e.target.closest('.content-item'); if (!itemEl) return; const channelId = itemEl.dataset.id; const channelData = db.channels.find(c => c.id === channelId); if (e.target.closest('.edit-channel-btn')) createChannelForm(channelData); if (e.target.closest('.delete-channel-btn')) handleDeleteChannel(channelId);
+            });
+            document.getElementById('add-channel-btn').addEventListener('click', () => createChannelForm());
+
+            eventListEl.addEventListener('click', e => {
+                const itemEl = e.target.closest('.content-item'); if (!itemEl) return; const eventId = itemEl.dataset.id; const eventData = db.events.find(evt => evt.id === eventId); if (e.target.closest('.edit-event-btn')) createEventForm(eventData); if (e.target.closest('.delete-event-btn')) handleDeleteEvent(eventId);
+            });
+            document.getElementById('add-event-btn').addEventListener('click', () => createEventForm());
+
+            notificationListEl.addEventListener('click', e => {
+                const itemEl = e.target.closest(".content-item"); if (!itemEl) return; const notifId = itemEl.dataset.id; const notifData = db.notifications.find(n => n.id === notifId); if (e.target.closest(".edit-notification-btn")) createNotificationForm(notifData); if (e.target.closest(".delete-notification-btn")) handleDeleteNotification(notifId);
+            });
+            
+            document.getElementById('add-content-sidebar-btn').addEventListener('click', () => { document.querySelector('.main-nav-btn[data-view="content"]').click(); setTimeout(() => createContentForm(), 50); });
+            document.getElementById('add-notification-btn').addEventListener('click', () => createNotificationForm());
+            document.getElementById('save-changes-btn').addEventListener('click', saveChanges);
+            
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            document.getElementById('mobile-menu-trigger').addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.add('is-open'); overlay.classList.add('is-visible'); });
+            overlay.addEventListener('click', () => { sidebar.classList.remove('is-open'); overlay.classList.remove('is-visible'); });
+
+            init();
+        });
+    </script>
+</body>
+</html>
